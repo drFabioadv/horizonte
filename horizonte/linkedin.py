@@ -334,6 +334,9 @@ def publish_post(hz, post_id: int, force: bool = False) -> dict:
         else:
             hz.db.execute("UPDATE posts SET status='falhou', error=?, updated_at=? WHERE id=?", (str(e), now_iso(), post_id))
         hz.log("error", "linkedin", f"Post {post_id}: {e}")
+        from .notify import notify
+
+        notify(hz, "HORIZONTE — falha no LinkedIn", str(e)[:180])
         return {"ok": False, "mensagem": str(e)}
     except httpx.HTTPError as e:
         hz.db.execute("UPDATE posts SET status='verificar', error=?, updated_at=? WHERE id=?",

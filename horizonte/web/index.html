@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HORIZONTE — Central Editorial</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="/static/app.css">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230b1220'/%3E%3Cpath d='M5 21a11 11 0 0 1 22 0' fill='none' stroke='%23e2b25c' stroke-width='2.4'/%3E%3Cpath d='M3 24h26' stroke='%23e6ebf3' stroke-width='2'/%3E%3C/svg%3E">
+</head>
+<body>
+<div class="shell" id="shell" hidden>
+  <aside class="side">
+    <a class="brand" href="#dashboard" aria-label="HORIZONTE — início">
+      <svg class="brand-mark" viewBox="0 0 64 30" aria-hidden="true"><path d="M6 26a26 26 0 0 1 52 0" fill="none" stroke="currentColor" stroke-width="2"/><path d="M0 28.5h64" stroke="var(--text)" stroke-width="1.4"/></svg>
+      <span class="brand-name">HORIZONTE</span>
+      <span class="brand-tag">Direito. Política. Sociedade.</span>
+    </a>
+    <nav class="nav" id="nav">
+      <a href="#dashboard" data-v="dashboard">Dashboard</a>
+      <a href="#radar" data-v="radar">Radar de Notícias</a>
+      <a href="#editorial" data-v="editorial">Central Editorial</a>
+      <a href="#linkedin" data-v="linkedin">LinkedIn</a>
+      <a href="#x" data-v="x">Central do X</a>
+      <a href="#relatorios" data-v="relatorios">Relatórios</a>
+      <a href="#config" data-v="config">Configurações</a>
+    </nav>
+    <div class="op" id="op"></div>
+    <p class="motto">Informação com contexto. Análise com responsabilidade. Opinião com fundamento.</p>
+  </aside>
+  <main class="main" id="main" tabindex="-1"></main>
+</div>
+
+<div class="login" id="login" hidden>
+  <form class="login-card" id="loginForm">
+    <svg class="brand-mark big" viewBox="0 0 64 30" aria-hidden="true"><path d="M6 26a26 26 0 0 1 52 0" fill="none" stroke="currentColor" stroke-width="2"/><path d="M0 28.5h64" stroke="var(--text)" stroke-width="1.4"/></svg>
+    <h1>HORIZONTE</h1>
+    <p class="muted">Central editorial local. Digite a chave do painel, que aparece na janela do HORIZONTE ao iniciar e no arquivo <code>data/admin.token</code>.</p>
+    <label for="chave">Chave do painel</label>
+    <input id="chave" type="password" autocomplete="current-password" required>
+    <button class="btn primary" type="submit">Entrar</button>
+    <p class="err" id="loginErr" hidden></p>
+  </form>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+<script src="/static/app.js"></script>
+</body>
+</html>
