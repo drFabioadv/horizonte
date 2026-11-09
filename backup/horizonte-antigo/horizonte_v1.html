@@ -1,0 +1,728 @@
+<title>Horizonte</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Marcellus+SC&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: três colunas — painel de contexto | palco do buraco negro com o arco de skills | agente. Empilha no celular. */
+:root{
+  color-scheme: dark;
+  --void:#060a12;
+  --abyss:#0c1524;
+  --panel:rgba(13,22,36,.80);
+  --panel-hi:rgba(22,34,54,.85);
+  --line:rgba(232,183,90,.26);
+  --line-soft:rgba(150,172,205,.13);
+  --gold:#e8b75a;
+  --ember:#fbe2a6;
+  --ink:#dfe6f1;
+  --muted:#8592aa;
+  --warn:#ef8f63;
+  --ok:#8cc7a5;
+  --f-display:'Marcellus SC','Cinzel',Georgia,serif;
+  --f-body:'IBM Plex Sans',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --f-mono:'IBM Plex Mono',ui-monospace,'SFMono-Regular',Menlo,monospace;
+}
+html,body{height:100%}
+[hidden]{display:none!important}
+body{
+  background: radial-gradient(ellipse 80% 70% at 46% 42%, #18294300 0%, #0000 100%), radial-gradient(ellipse at 46% 42%, #172a45 0%, #0d1828 42%, var(--void) 100%);
+  background-color: var(--void);
+  color: var(--ink);
+  font-family: var(--f-body);
+  font-size: 13px;
+  line-height: 1.45;
+  overflow: hidden;
+}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+button:focus-visible,textarea:focus-visible{outline:1.5px solid var(--gold);outline-offset:2px;border-radius:6px}
+
+.app{
+  height:100%;
+  box-sizing:border-box;
+  display:grid;
+  grid-template-columns: 290px minmax(0,1fr) 360px;
+  gap:16px;
+  padding-block:16px;
+  padding-left:max(16px, env(safe-area-inset-left, 0px));
+  padding-right:max(16px, env(safe-area-inset-right, 0px));
+}
+.panel{
+  background:var(--panel);
+  border:1px solid var(--line-soft);
+  border-radius:12px;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  min-width:0; min-height:0;
+}
+.eyebrow{
+  font-family:var(--f-mono); font-size:10px; letter-spacing:.16em; text-transform:uppercase; color:var(--muted);
+  display:flex; align-items:center; gap:8px;
+}
+.eyebrow b{color:var(--gold); font-weight:500}
+
+/* ---------- painel esquerdo ---------- */
+.left{display:flex;flex-direction:column;gap:14px;overflow:auto;padding:18px 16px;scrollbar-width:thin}
+.brand{font-family:var(--f-display);font-size:20px;letter-spacing:.42em;color:var(--ember);padding-left:2px}
+.brand small{display:block;font-family:var(--f-mono);font-size:9.5px;letter-spacing:.18em;color:var(--muted);margin-top:2px}
+.block{display:flex;flex-direction:column;gap:10px;padding-top:14px;border-top:1px solid var(--line-soft)}
+.notifs{display:flex;flex-direction:column;gap:8px;list-style:none;margin:0;padding:0}
+.notif{display:grid;grid-template-columns:22px 1fr;gap:10px;padding:9px 10px;border-radius:9px;background:var(--panel-hi);border:1px solid var(--line-soft)}
+.notif .ico{width:22px;height:22px;border-radius:6px;display:grid;place-items:center;border:1px solid var(--line);color:var(--gold)}
+.notif.warn .ico{color:var(--warn);border-color:rgba(239,143,99,.4)}
+.notif strong{display:block;font-weight:600;font-size:12.5px}
+.notif span{color:var(--muted);font-size:12px}
+
+.cal-head{display:flex;justify-content:space-between;align-items:center}
+.cal-head .m{font-family:var(--f-mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase}
+.cal-nav{display:flex;gap:2px}
+.cal-nav button{width:24px;height:24px;border-radius:6px;color:var(--muted)}
+.cal-nav button:hover{color:var(--gold);background:var(--panel-hi)}
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;text-align:center;font-family:var(--f-mono);font-size:11px;font-variant-numeric:tabular-nums}
+.cal .dow{color:var(--muted);font-size:9.5px;padding-bottom:4px}
+.cal button{position:relative;height:26px;border-radius:7px;color:var(--ink)}
+.cal button.out{color:#4a566b}
+.cal button:hover{background:var(--panel-hi)}
+.cal button.today{box-shadow:inset 0 0 0 1px var(--gold);color:var(--ember)}
+.cal button.picked{background:rgba(232,183,90,.16)}
+.cal button.has::after{content:"";position:absolute;left:50%;bottom:3px;width:4px;height:4px;margin-left:-2px;border-radius:50%;background:var(--gold)}
+.agenda{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.agenda li{display:grid;grid-template-columns:44px 1fr;gap:8px;font-size:12px}
+.agenda time{font-family:var(--f-mono);color:var(--gold);font-variant-numeric:tabular-nums}
+.agenda .none{grid-template-columns:1fr;color:var(--muted)}
+
+.goals{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:11px}
+.goal .row{display:flex;justify-content:space-between;gap:8px;font-size:12.5px}
+.goal .row span:last-child{font-family:var(--f-mono);font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
+.bar{height:4px;border-radius:4px;background:rgba(150,172,205,.14);margin-top:6px;overflow:hidden}
+.bar i{display:block;height:100%;border-radius:4px;background:linear-gradient(90deg,#b8843a,var(--gold),var(--ember))}
+.foot{font-size:11px;color:var(--muted);border-top:1px solid var(--line-soft);padding-top:12px;margin-top:auto}
+
+/* ---------- palco ---------- */
+.stage{position:relative;min-width:0;min-height:0;overflow:hidden;border-radius:12px}
+.stage canvas{position:absolute;inset:0;display:block}
+.toggle{position:absolute;top:14px;left:40%;transform:translateX(-50%);display:flex;padding:3px;border-radius:999px;border:1px solid var(--line);background:rgba(8,14,24,.6);z-index:3}
+.toggle button{font-family:var(--f-mono);font-size:10px;letter-spacing:.16em;padding:5px 12px;border-radius:999px;color:var(--muted)}
+.toggle button[aria-pressed="true"]{background:var(--gold);color:#1a1206}
+.stats{position:absolute;left:14px;bottom:12px;font-family:var(--f-mono);font-size:10.5px;letter-spacing:.08em;color:var(--muted);z-index:2}
+.stats b{color:var(--gold);font-weight:500}
+.hint{position:absolute;right:14px;bottom:12px;font-family:var(--f-mono);font-size:10.5px;color:var(--muted);z-index:2}
+
+.arc{position:absolute;inset:0;pointer-events:none;z-index:2}
+.skill{position:absolute;pointer-events:auto;display:flex;align-items:center;gap:9px;transform:translate(-7px,-50%);
+  font-family:var(--f-mono);font-size:11.5px;color:#c9d1de;white-space:nowrap;padding:2px 6px 2px 0;border-radius:6px}
+.skill .dot{width:13px;height:13px;flex:none;border-radius:50%;border:1.5px solid var(--gold);background:radial-gradient(circle,var(--ember) 0 22%,#1a1407 30%);box-shadow:0 0 8px rgba(232,183,90,.35);transition:transform .2s, box-shadow .2s}
+.skill:hover{color:var(--ember)}
+.skill:hover .dot{transform:scale(1.15)}
+.skill[aria-pressed="true"]{color:var(--ember);font-weight:500}
+.skill[aria-pressed="true"] .dot{transform:scale(1.45);background:radial-gradient(circle,#fff 0 25%,var(--gold) 45%,#3a2a0c 70%);box-shadow:0 0 16px rgba(251,226,166,.75)}
+.skill.new{color:var(--muted)}
+.skill.new .dot{background:none;border-style:dashed;display:grid;place-items:center;font-size:10px;line-height:1;color:var(--gold)}
+.skill.dim{opacity:.55}
+
+.chips{display:none;position:absolute;left:0;right:0;bottom:36px;z-index:3;overflow-x:auto;padding:0 12px;gap:6px;scrollbar-width:none}
+.chips button{flex:none;font-family:var(--f-mono);font-size:11px;padding:5px 10px;border-radius:999px;border:1px solid var(--line);background:rgba(8,14,24,.7);color:#c9d1de}
+.chips button[aria-pressed="true"]{background:var(--gold);color:#1a1206;border-color:var(--gold)}
+.stage.narrow .arc{display:none}
+.stage.narrow .chips{display:flex}
+.stage.narrow .toggle{left:50%}
+.stage.narrow .hint{display:none}
+
+.note-card{position:absolute;z-index:4;width:270px;max-width:calc(100% - 16px);padding:12px 14px 12px;border-radius:10px;background:rgba(10,17,29,.94);border:1px solid var(--line);box-shadow:0 16px 40px rgba(0,0,0,.45)}
+.note-card .path{font-family:var(--f-mono);font-size:10px;color:var(--gold);letter-spacing:.04em;padding-right:22px;overflow-wrap:anywhere}
+.note-card h3{margin:4px 0 6px;font-size:14px;font-weight:600;text-wrap:balance}
+.note-card p{margin:0 0 10px;color:#c3cbd8;font-size:12.5px}
+.note-card .x{position:absolute;top:8px;right:8px;width:22px;height:22px;border-radius:6px;color:var(--muted)}
+.note-card .x:hover{color:var(--ink);background:var(--panel-hi)}
+.tags{display:flex;flex-wrap:wrap;gap:5px}
+.tags button{font-family:var(--f-mono);font-size:10.5px;padding:3px 8px;border-radius:999px;border:1px solid var(--line);color:var(--ember)}
+.tags button:hover{background:rgba(232,183,90,.14)}
+
+/* ---------- painel direito ---------- */
+.right{display:flex;flex-direction:column;overflow:hidden}
+.r-head{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-bottom:1px solid var(--line-soft)}
+.tabs{display:flex;gap:4px}
+.tabs button{font-family:var(--f-mono);font-size:10.5px;letter-spacing:.16em;padding:5px 10px;border-radius:7px;color:var(--muted)}
+.tabs button[aria-selected="true"]{color:var(--ember);background:var(--panel-hi);box-shadow:inset 0 0 0 1px var(--line)}
+.clock{font-family:var(--f-mono);font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums}
+.pane{flex:1;min-height:0;display:flex;flex-direction:column}
+.msgs{flex:1;min-height:0;overflow:auto;padding:14px;display:flex;flex-direction:column;gap:12px;scrollbar-width:thin}
+.msg{max-width:92%;font-size:13px;min-width:0}
+.msg.user{align-self:flex-end;background:rgba(232,183,90,.13);border:1px solid var(--line);padding:8px 11px;border-radius:12px 12px 3px 12px;white-space:pre-wrap;overflow-wrap:anywhere}
+.msg.bot{align-self:flex-start;padding:2px 0;overflow-wrap:anywhere}
+.msg.bot .who{font-family:var(--f-mono);font-size:9.5px;letter-spacing:.16em;color:var(--gold);margin-bottom:3px}
+.msg.bot p{margin:0 0 7px}
+.msg.bot ul,.msg.bot ol{margin:0 0 7px;padding-left:18px}
+.msg.bot li{margin:2px 0}
+.msg.bot h4{margin:8px 0 4px;font-size:12.5px;color:var(--ember)}
+.msg.bot code{font-family:var(--f-mono);font-size:11.5px;background:rgba(150,172,205,.12);padding:1px 4px;border-radius:4px}
+.msg.bot pre{background:#070c15;border:1px solid var(--line-soft);border-radius:8px;padding:8px 10px;overflow-x:auto;margin:0 0 7px}
+.msg.bot pre code{background:none;padding:0}
+.msg .think{color:var(--muted);font-style:italic}
+.msg .err{color:var(--warn);font-size:12px}
+.msg .tool{font-family:var(--f-mono);font-size:10.5px;color:var(--muted);margin-bottom:4px}
+.sugs{display:flex;flex-wrap:wrap;gap:6px;padding:0 14px 10px}
+.sugs button{font-size:12px;text-align:left;padding:6px 10px;border-radius:9px;border:1px solid var(--line-soft);background:var(--panel-hi);color:#c9d1de}
+.sugs button:hover{border-color:var(--line);color:var(--ember)}
+.composer{display:flex;gap:8px;align-items:flex-end;padding:10px 12px 12px;border-top:1px solid var(--line-soft)}
+.composer textarea{flex:1;min-width:0;resize:none;max-height:140px;min-height:38px;box-sizing:border-box;padding:9px 11px;border-radius:9px;border:1px solid var(--line-soft);background:#08101c;color:var(--ink);font:inherit;font-size:13px}
+.composer textarea::placeholder{color:#5f6b80}
+.send{height:38px;padding:0 14px;border-radius:9px;background:var(--gold);color:#1a1206;font-weight:600;font-size:12.5px}
+.send.stop{background:transparent;color:var(--ember);box-shadow:inset 0 0 0 1px var(--line)}
+.send:disabled{opacity:.45;cursor:default}
+.offline{margin:0 14px 10px;font-size:12px;color:var(--muted);border:1px dashed var(--line-soft);border-radius:8px;padding:8px 10px}
+
+.skill-view{flex:1;min-height:0;overflow:auto;padding:16px;scrollbar-width:thin}
+.skill-view .empty{color:var(--muted);font-size:13px;padding-top:30px;text-align:center}
+.sv-id{font-family:var(--f-mono);font-size:15px;color:var(--ember)}
+.sv-path{font-family:var(--f-mono);font-size:10px;color:var(--muted);margin:2px 0 10px}
+.sv-desc{margin:0 0 14px;color:#c9d1de}
+.skill-view h4{font-family:var(--f-mono);font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--gold);margin:14px 0 6px;font-weight:500}
+.skill-view ol{margin:0;padding-left:18px}
+.skill-view li{margin:3px 0}
+.skill-view p{margin:0}
+.use{margin-top:18px;width:100%;height:36px;border-radius:9px;background:var(--gold);color:#1a1206;font-weight:600}
+
+@media (max-width:1080px){
+  html,body{height:auto}
+  body{overflow:auto}
+  .app{height:auto;grid-template-columns:minmax(0,1fr)}
+  .stage{height:72svh;min-height:440px;max-height:760px;order:1}
+  .right{order:2;height:560px}
+  .left{order:3;overflow:visible}
+}
+@media (prefers-reduced-motion: reduce){
+  .skill .dot{transition:none}
+}
+</style>
+
+<div class="app">
+  <aside class="panel left" aria-label="Contexto">
+    <div class="brand">HORIZONTE<small>CENTRAL DOS SEUS AGENTES</small></div>
+
+    <section class="block" aria-labelledby="h-not">
+      <div class="eyebrow" id="h-not">Notificações <b id="notifCount"></b></div>
+      <ul class="notifs" id="notifs"></ul>
+    </section>
+
+    <section class="block" aria-labelledby="h-cal">
+      <div class="cal-head">
+        <div class="eyebrow" id="h-cal">Calendário</div>
+        <div class="cal-nav">
+          <button id="calPrev" aria-label="Mês anterior">‹</button>
+          <button id="calNext" aria-label="Próximo mês">›</button>
+        </div>
+      </div>
+      <div class="m" id="calTitle" style="font-family:var(--f-mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase"></div>
+      <div class="cal" id="cal" role="grid"></div>
+      <ul class="agenda" id="agenda"></ul>
+    </section>
+
+    <section class="block" aria-labelledby="h-obj">
+      <div class="eyebrow" id="h-obj">Objetivos <b id="goalCount"></b></div>
+      <ul class="goals" id="goals"></ul>
+    </section>
+
+    <p class="foot">Notificações, eventos, objetivos e notas são exemplos. Troque pelos seus dados ou conecte suas fontes.</p>
+  </aside>
+
+  <main class="stage" id="stage" aria-label="Mapa das skills e notas">
+    <canvas id="cv" aria-hidden="true"></canvas>
+    <div class="toggle" role="group" aria-label="Visão">
+      <button id="vDisco" aria-pressed="true">DISCO</button>
+      <button id="vLente" aria-pressed="false">LENTE</button>
+    </div>
+    <div class="arc" id="arc"></div>
+    <div class="chips" id="chips"></div>
+    <div class="note-card" id="noteCard" hidden>
+      <button class="x" id="noteX" aria-label="Fechar nota">✕</button>
+      <div class="path" id="notePath"></div>
+      <h3 id="noteTitle"></h3>
+      <p id="noteBody"></p>
+      <div class="tags" id="noteTags"></div>
+    </div>
+    <div class="stats" id="stats"></div>
+    <div class="hint">clique numa nota do disco · Esc fecha</div>
+  </main>
+
+  <aside class="panel right" aria-label="Agente">
+    <div class="r-head">
+      <div class="tabs" role="tablist">
+        <button role="tab" id="tChat" aria-selected="true" aria-controls="pChat">AGENTE</button>
+        <button role="tab" id="tSkill" aria-selected="false" aria-controls="pSkill">SKILL</button>
+      </div>
+      <div class="clock" id="clock"></div>
+    </div>
+    <section class="pane" id="pChat" role="tabpanel" aria-labelledby="tChat">
+      <div class="msgs" id="msgs" aria-live="polite"></div>
+      <div class="offline" id="offline" hidden>O agente responde quando esta página está aberta no Claude. Aqui ele está desligado.</div>
+      <div class="sugs" id="sugs"></div>
+      <form class="composer" id="composer">
+        <textarea id="input" rows="1" placeholder="Fale com o Horizonte…" aria-label="Mensagem para o agente"></textarea>
+        <button class="send" id="send" type="submit">Enviar</button>
+      </form>
+    </section>
+    <section class="pane" id="pSkill" role="tabpanel" aria-labelledby="tSkill" hidden>
+      <div class="skill-view" id="skillView"></div>
+    </section>
+  </aside>
+</div>
+
+<script>
+/* ================= DADOS (exemplos) ================= */
+const SKILLS = [
+  {id:'radar-pncp', desc:'Varre o PNCP e portais de compras atrás de editais de limpeza e conservação em Belém e região.', obj:'Achar todo pregão novo que a empresa pode disputar, antes dos concorrentes.', passos:['Consultar PNCP e Compras.gov.br com as palavras-chave do radar','Filtrar por UF, modalidade e valor estimado','Descartar o que exige atestado ou ramo que a empresa não tem','Listar os editais com data de abertura e link'], saida:'Lista de editais priorizada, com prazo e valor estimado.'},
+  {id:'analise-edital', desc:'Lê o edital inteiro e extrai requisitos de habilitação, prazos, riscos e cláusulas restritivas.', obj:'Decidir em minutos se vale a pena entrar no certame.', passos:['Ler edital, termo de referência e anexos','Extrair habilitação jurídica, fiscal, técnica e econômica','Apontar exigências restritivas e prazos de impugnação','Dar o veredito: entrar, impugnar ou descartar'], saida:'Relatório curto com veredito, riscos e prazos.'},
+  {id:'checklist-habilitacao', desc:'Confere os documentos da empresa contra o que o edital pede.', obj:'Nunca ser inabilitado por documento vencido ou faltando.', passos:['Cruzar exigências do edital com as certidões salvas','Checar validade de cada certidão na data da sessão','Listar o que falta e onde emitir'], saida:'Checklist com OK, vencido ou faltando por documento.'},
+  {id:'planilha-custos', desc:'Monta a planilha de custos e formação de preços de mão de obra.', obj:'Chegar a um preço competitivo e exequível.', passos:['Puxar piso e benefícios da convenção coletiva vigente','Calcular encargos, insumos, uniformes e lucro','Testar o preço contra o valor estimado do edital'], saida:'Planilha por posto de trabalho e preço global.'},
+  {id:'proposta-comercial', desc:'Redige a proposta comercial no formato que o edital pede.', obj:'Proposta sem erro formal, pronta para anexar.', passos:['Seguir o modelo do anexo do edital','Preencher valores da planilha de custos','Revisar validade, prazos e assinatura'], saida:'Proposta em texto final.'},
+  {id:'impugnacao-edital', desc:'Prepara impugnação ou pedido de esclarecimento ao edital.', obj:'Derrubar exigência ilegal antes da sessão.', passos:['Identificar a cláusula e o fundamento legal','Conferir o prazo do art. 164 da Lei 14.133/2021','Redigir a peça com pedido claro'], saida:'Peça de impugnação pronta para protocolo.'},
+  {id:'recurso-administrativo', desc:'Recurso contra inabilitação, desclassificação ou habilitação de concorrente.', obj:'Reverter o resultado dentro do prazo.', passos:['Registrar intenção de recorrer na sessão','Montar fundamentos (art. 165 da Lei 14.133/2021)','Redigir o recurso no prazo de 3 dias úteis'], saida:'Recurso fundamentado.'},
+  {id:'contrarrazoes', desc:'Responde ao recurso de concorrente para manter a vitória.', obj:'Defender a habilitação e a proposta da empresa.', passos:['Ler o recurso e mapear cada alegação','Rebater ponto a ponto com documentos','Pedir a manutenção da decisão'], saida:'Contrarrazões prontas.'},
+  {id:'peticao-inicial', desc:'Monta petição inicial para clientes da advocacia.', obj:'Peça completa nos requisitos do art. 319 do CPC.', passos:['Organizar fatos e documentos do cliente','Escolher fundamentos e pedidos','Revisar valor da causa e provas'], saida:'Minuta de petição inicial.'},
+  {id:'revisao-contrato', desc:'Revisa contratos e aponta cláusulas de risco.', obj:'Proteger o cliente antes da assinatura.', passos:['Ler o contrato inteiro','Marcar multas, rescisão, foro e garantias','Sugerir redação alternativa'], saida:'Lista de riscos com sugestão de texto.'},
+  {id:'estudo-alepa', desc:'Monta o estudo dia a dia para o concurso da ALEPA (CETAP).', obj:'Cobrir o edital inteiro até a prova.', passos:['Distribuir as matérias por data','Encaixar revisão e questões CETAP','Ajustar conforme o rendimento'], saida:'Cronograma com o que estudar em cada dia.'},
+  {id:'estudo-trt8', desc:'Monta o estudo dia a dia para Analista Judiciário do TRT-8 (FCC).', obj:'Conciliar com o estudo da ALEPA sem perder matéria.', passos:['Separar matérias em comum com a ALEPA','Priorizar o que a FCC mais cobra','Distribuir por data'], saida:'Cronograma diário do TRT-8.'},
+  {id:'simulado-questoes', desc:'Gera questões no estilo da banca e corrige com explicação.', obj:'Treinar o que mais cai.', passos:['Escolher matéria e banca','Gerar questões no estilo dela','Corrigir e anotar os erros'], saida:'Simulado com gabarito comentado.'},
+  {id:'roteiro-cortes', desc:'Escolhe cenas de filme e escreve o gancho dos cortes do TikTok.', obj:'Cortes que prendem nos 3 primeiros segundos.', passos:['Ver a lista de filmes já cortados','Escolher a cena e o gancho','Definir duração e horário de postagem'], saida:'Roteiro de corte com gancho e legenda.'},
+  {id:'legenda-capcut', desc:'Prepara a legenda e o texto de tela no padrão do CapCut.', obj:'Editar mais rápido com um padrão fixo.', passos:['Aplicar o preset de legenda','Escrever o texto de tela','Gerar descrição e hashtags'], saida:'Texto pronto para colar no CapCut.'},
+  {id:'linkedin-post', desc:'Escreve posts do LinkedIn no tom do Fabio.', obj:'Atrair empresas privadas para o perfil.', passos:['Escolher um tema da lista de ideias','Escrever no tom de voz salvo','Revisar gancho e chamada final'], saida:'Post pronto para publicar.'},
+  {id:'trocado-bot', desc:'Ajuda a construir o Trocado, o bot de finanças no WhatsApp.', obj:'Lançar a primeira versão do bot.', passos:['Ler as funcionalidades planejadas','Definir o próximo pedaço a construir','Escrever o código ou o fluxo da conversa'], saida:'Próximo passo do Trocado definido.'},
+];
+
+const NOTES = [
+  ['empresa/ramos.md','Ramos de atuação da empresa','Limpeza e conservação predial, limpeza hospitalar e serviços correlatos. Serve de filtro para o radar e para a análise.',['radar-pncp','analise-edital','checklist-habilitacao']],
+  ['empresa/certidoes.md','Certidões e validade','CND federal, FGTS, trabalhista, estadual e municipal, cada uma com data de vencimento.',['checklist-habilitacao']],
+  ['empresa/atestados.md','Atestados de capacidade técnica','Atestados já emitidos, órgão, objeto e quantidade de postos.',['checklist-habilitacao','analise-edital']],
+  ['custos/cct-limpeza.md','Convenção coletiva da limpeza','Piso, vale-alimentação e adicionais da convenção vigente. Atualizar a cada data-base.',['planilha-custos']],
+  ['custos/modelo-planilha.md','Modelo de planilha de custos','Estrutura da planilha de custos e formação de preços por posto de trabalho.',['planilha-custos','proposta-comercial']],
+  ['lei/art-164.md','Lei 14.133 · art. 164','Impugnação e pedido de esclarecimento até 3 dias úteis antes da abertura do certame.',['impugnacao-edital']],
+  ['lei/art-165.md','Lei 14.133 · art. 165','Recurso em 3 dias úteis. Contrarrazões no mesmo prazo, contado do fim do prazo do recorrente.',['recurso-administrativo','contrarrazoes']],
+  ['lei/art-59.md','Lei 14.133 · art. 59','Desclassificação por inexequibilidade. Guardar a memória de cálculo para demonstrar o preço.',['planilha-custos','recurso-administrativo','contrarrazoes']],
+  ['radar/portais.md','Portais monitorados','PNCP, Compras.gov.br e portais estaduais e municipais da região.',['radar-pncp']],
+  ['radar/palavras-chave.md','Palavras-chave do radar','limpeza, conservação, asseio, higienização, copeiragem, serviços continuados.',['radar-pncp']],
+  ['licitacoes/licoes.md','Lições de pregões perdidos','Onde a empresa já perdeu: documento vencido, lance tardio, planilha com erro de encargo.',['analise-edital','proposta-comercial','checklist-habilitacao']],
+  ['licitacoes/modelo-proposta.md','Modelo de proposta','Proposta padrão com dados da empresa, validade de 60 dias e declarações.',['proposta-comercial']],
+  ['licitacoes/modelo-recurso.md','Modelo de recurso','Estrutura: tempestividade, síntese, fundamentos, pedido.',['recurso-administrativo','contrarrazoes']],
+  ['licitacoes/tcu-habilitacao.md','TCU · formalismo moderado','Entendimentos do TCU contra inabilitação por falha formal sanável.',['recurso-administrativo','checklist-habilitacao','impugnacao-edital']],
+  ['licitacoes/prazos.md','Prazos da semana','Sessões, impugnações e recursos em aberto, com data limite.',['analise-edital','impugnacao-edital','recurso-administrativo']],
+  ['advocacia/clientes.md','Clientes da advocacia','Casos em andamento e o que cada um precisa.',['peticao-inicial','revisao-contrato']],
+  ['advocacia/art-319.md','CPC · art. 319','Requisitos da petição inicial: juízo, partes, fatos, fundamentos, pedido, valor da causa, provas.',['peticao-inicial']],
+  ['advocacia/checklist-contrato.md','Checklist de contrato','Objeto, preço, reajuste, multa, rescisão, foro, LGPD, garantias.',['revisao-contrato']],
+  ['concursos/alepa-edital.md','Edital ALEPA · conteúdo','Matérias do cargo e pesos. Banca CETAP.',['estudo-alepa','simulado-questoes']],
+  ['concursos/trt8-edital.md','Edital TRT-8 · conteúdo','Analista Judiciário, Área Judiciária. Banca FCC.',['estudo-trt8','simulado-questoes']],
+  ['concursos/cronograma.md','Cronograma dia a dia','Formato preferido: o que estudar em cada data, nada de fases resumidas.',['estudo-alepa','estudo-trt8']],
+  ['concursos/erros.md','Erros frequentes','Questões erradas e o porquê, para revisar.',['simulado-questoes']],
+  ['concursos/cetap.md','Estilo CETAP','Como a banca costuma cobrar e pegadinhas comuns.',['estudo-alepa','simulado-questoes']],
+  ['concursos/fcc.md','Estilo FCC','Letra de lei e jurisprudência dos tribunais superiores.',['estudo-trt8','simulado-questoes']],
+  ['tiktok/filmes.md','Filmes já cortados','Lista do que já foi postado, para não repetir.',['roteiro-cortes']],
+  ['tiktok/ganchos.md','Ganchos que funcionaram','Os ganchos dos cortes com mais views.',['roteiro-cortes','legenda-capcut']],
+  ['tiktok/preset.md','Preset de legenda','Fonte, tamanho, posição e cor da legenda no CapCut.',['legenda-capcut']],
+  ['tiktok/horarios.md','Horários de postagem','Faixas de horário com melhor alcance.',['roteiro-cortes']],
+  ['linkedin/objetivo.md','Objetivo do LinkedIn','Atrair empresas privadas que disputam licitações.',['linkedin-post']],
+  ['linkedin/ideias.md','Ideias de posts','Temas: Lei 14.133 na prática, erros de habilitação, rotina de quem disputa pregão.',['linkedin-post']],
+  ['eu/tom-de-voz.md','Tom de voz','Direto, em português simples, sem juridiquês desnecessário.',['linkedin-post','peticao-inicial','proposta-comercial']],
+  ['trocado/funcoes.md','Trocado · funcionalidades','Registrar gasto por mensagem, resumo do mês, alerta de fatura.',['trocado-bot']],
+  ['trocado/categorias.md','Trocado · categorias','Moradia, mercado, transporte, lazer, dívidas.',['trocado-bot']],
+  ['eu/rotina.md','Rotina','Horários livres para estudo e para a empresa.',['estudo-alepa','estudo-trt8','roteiro-cortes']],
+].map(([path,t,body,skills],i)=>({id:'n'+(i+1),path:'memoria/'+path,t,body,skills}));
+
+const NOTIFS = [
+  {k:'gold',t:'Radar PNCP',d:'Pregão de limpeza hospitalar publicado. Abre em 18/11.'},
+  {k:'warn',t:'Prazo de impugnação',d:'Último dia para impugnar o edital do pregão 112 é segunda.'},
+  {k:'gold',t:'TikTok',d:'Corte de ontem passou de 50 mil visualizações.'},
+];
+const EVENTS = {
+  '2026-11-09':[['09:00','Sessão do pregão de copeiragem']],
+  '2026-11-10':[['18:00','Prazo de impugnação · pregão 112']],
+  '2026-11-13':[['—','Vence CND trabalhista']],
+  '2026-11-18':[['10:00','Abertura · limpeza hospitalar'],['20:00','Estudo: Direito Constitucional']],
+  '2026-11-21':[['08:00','Simulado ALEPA (CETAP)']],
+  '2026-11-27':[['19:00','Postar 3 cortes']],
+};
+const GOALS = [
+  {t:'Licitações ganhas',v:1,of:3,txt:'1 de 3'},
+  {t:'Edital da ALEPA estudado',v:42,of:100,txt:'42%'},
+  {t:'Seguidores no TikTok',v:6.2,of:10,txt:'6,2 mil de 10 mil'},
+  {t:'Trocado no ar',v:30,of:100,txt:'30%'},
+];
+
+/* ================= helpers ================= */
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const state = {view:'disco', sel:null, hover:null};
+
+/* ================= painel esquerdo ================= */
+const ICON = {
+  gold:'<svg width="12" height="12" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="4.5" stroke="currentColor" stroke-width="1.3"/><circle cx="6" cy="6" r="1.6" fill="currentColor"/></svg>',
+  warn:'<svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 1.5 11 10.5H1Z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/><path d="M6 5v2.4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>'
+};
+$('#notifs').innerHTML = NOTIFS.map(n=>`<li class="notif ${n.k==='warn'?'warn':''}"><div class="ico">${ICON[n.k]}</div><div><strong>${esc(n.t)}</strong><span>${esc(n.d)}</span></div></li>`).join('');
+$('#notifCount').textContent = NOTIFS.length;
+$('#goals').innerHTML = GOALS.map(g=>`<li class="goal"><div class="row"><span>${esc(g.t)}</span><span>${esc(g.txt)}</span></div><div class="bar"><i style="width:${Math.round(g.v/g.of*100)}%"></i></div></li>`).join('');
+$('#goalCount').textContent = GOALS.length + ' em andamento';
+
+const MESES = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+const today = new Date();
+const iso = (y,m,d) => `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+let calY = today.getFullYear(), calM = today.getMonth();
+let picked = iso(calY, calM, today.getDate());
+function renderCal(){
+  $('#calTitle').textContent = `${MESES[calM]} de ${calY}`;
+  const first = new Date(calY, calM, 1).getDay();
+  const days = new Date(calY, calM+1, 0).getDate();
+  const prevDays = new Date(calY, calM, 0).getDate();
+  let h = ['D','S','T','Q','Q','S','S'].map(d=>`<div class="dow">${d}</div>`).join('');
+  const cells = Math.ceil((first+days)/7)*7;
+  for(let i=0;i<cells;i++){
+    let y=calY,m=calM,d=i-first+1,out=false;
+    if(d<1){m=calM-1;d=prevDays+d;out=true} else if(d>days){m=calM+1;d=d-days;out=true}
+    const dt=new Date(y,m,d); const key=iso(dt.getFullYear(),dt.getMonth(),dt.getDate());
+    const cls=[out?'out':'', key===iso(today.getFullYear(),today.getMonth(),today.getDate())?'today':'', EVENTS[key]?'has':'', key===picked?'picked':''].join(' ');
+    h+=`<button class="${cls}" data-k="${key}" aria-label="${dt.getDate()} de ${MESES[dt.getMonth()]}${EVENTS[key]?', com eventos':''}">${dt.getDate()}</button>`;
+  }
+  $('#cal').innerHTML=h;
+  const ev = EVENTS[picked];
+  const [py,pm,pd] = picked.split('-').map(Number);
+  $('#agenda').innerHTML = ev ? ev.map(([t,x])=>`<li><time>${esc(t)}</time><span>${esc(x)}</span></li>`).join('') : `<li class="none">Nada marcado em ${pd} de ${MESES[pm-1]}.</li>`;
+}
+$('#cal').addEventListener('click',e=>{const b=e.target.closest('button[data-k]'); if(!b)return; picked=b.dataset.k; const [y,m]=picked.split('-').map(Number); calY=y; calM=m-1; renderCal();});
+$('#calPrev').onclick=()=>{calM--; if(calM<0){calM=11;calY--} renderCal()};
+$('#calNext').onclick=()=>{calM++; if(calM>11){calM=0;calY++} renderCal()};
+// abre no próximo dia com evento, se houver no mês atual
+(function(){const t=iso(today.getFullYear(),today.getMonth(),today.getDate()); const next=Object.keys(EVENTS).sort().find(k=>k>=t); if(next && next.slice(0,7)===t.slice(0,7)) picked=next;})();
+renderCal();
+
+function tick(){ $('#clock').textContent = new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}); }
+tick(); setInterval(tick, 20000);
+
+/* ================= arco de skills ================= */
+const arcEl=$('#arc'), chipsEl=$('#chips');
+const ITEMS=[...SKILLS.map(s=>s.id),'__new'];
+arcEl.innerHTML = ITEMS.map(id=> id==='__new'
+  ? `<button class="skill new" data-id="__new"><span class="dot">+</span>nova skill</button>`
+  : `<button class="skill" data-id="${id}" aria-pressed="false"><span class="dot"></span>${id}</button>`).join('');
+chipsEl.innerHTML = ITEMS.map(id=> id==='__new' ? `<button data-id="__new">+ nova skill</button>` : `<button data-id="${id}" aria-pressed="false">${id}</button>`).join('');
+function onSkillClick(e){const b=e.target.closest('[data-id]'); if(!b)return; const id=b.dataset.id; if(id==='__new'){newSkill();return} selectSkill(state.sel===id?null:id);}
+arcEl.addEventListener('click',onSkillClick); chipsEl.addEventListener('click',onSkillClick);
+$('#stats').innerHTML = `<b>${SKILLS.length}</b> skills · <b>${NOTES.length}</b> notas em órbita`;
+
+/* ================= canvas ================= */
+const stage=$('#stage'), cv=$('#cv'), ctx=cv.getContext('2d');
+let W=0,H=0,DPR=1,G={};
+const A0=-64*Math.PI/180, A1=64*Math.PI/180;
+function skillPos(i){const a=A0+(A1-A0)*i/(ITEMS.length-1); return {x:G.cx+G.Ra*Math.cos(a), y:G.cy+G.Ra*Math.sin(a)};}
+function layout(){
+  const r=stage.getBoundingClientRect(); W=r.width; H=r.height; DPR=Math.min(2,window.devicePixelRatio||1);
+  cv.width=Math.round(W*DPR); cv.height=Math.round(H*DPR); cv.style.width=W+'px'; cv.style.height=H+'px';
+  const narrow=W<640; stage.classList.toggle('narrow',narrow);
+  if(narrow){ G={narrow,cx:W/2,cy:H*0.45,Ra:0,base:Math.min(W*0.47,H*0.4)}; }
+  else { const cx=W*0.40; const Ra=Math.max(150,Math.min(W*0.40,H*0.45,W-cx-200)); G={narrow,cx,cy:H*0.52,Ra,base:Ra*0.8}; }
+  document.querySelector('.toggle').style.left = narrow? '50%' : (G.cx/W*100)+'%';
+  arcEl.querySelectorAll('.skill').forEach((b,i)=>{const p=skillPos(i); b.style.left=p.x+'px'; b.style.top=p.y+'px';});
+  makeStars();
+}
+let stars=[];
+function makeStars(){ stars=[]; const n=Math.round(W*H/5200); for(let i=0;i<n;i++) stars.push([Math.random()*W,Math.random()*H,Math.random()*0.9+0.2,Math.random()]); }
+
+// partículas do disco
+const RIN=0.2, NP=2600, BANDS=46;
+const COLORS=['#fff4d8','#ffe3a4','#f4c672','#e2a84f','#bb873d','#8a6c42'];
+const P={r:new Float32Array(NP),t:new Float32Array(NP),s:new Float32Array(NP),z:new Float32Array(NP),b:new Float32Array(NP),c:new Uint8Array(NP)};
+(function initParticles(){
+  const tmp=[];
+  for(let i=0;i<NP;i++){
+    let r;
+    if(Math.random()<0.62){ const band=Math.floor(Math.random()*BANDS); r=RIN+(1-RIN)*Math.pow((band+0.5)/BANDS,1.25)+(Math.random()-.5)*0.008; }
+    else r=RIN+(1-RIN)*Math.pow(Math.random(),1.35);
+    const f=(r-RIN)/(1-RIN);
+    tmp.push({r, t:Math.random()*Math.PI*2, s:0.045*Math.pow(r,-1.5)*(0.9+Math.random()*0.2), z:Math.random()<0.08?1.8:(0.7+Math.random()*0.8), b:(0.25+Math.random()*0.6)*(1.15-f*0.6), c:Math.min(5,Math.floor(f*6))});
+  }
+  tmp.sort((a,b)=>a.c-b.c);
+  tmp.forEach((p,i)=>{P.r[i]=p.r;P.t[i]=p.t;P.s[i]=p.s;P.z[i]=p.z;P.b[i]=p.b;P.c[i]=p.c;});
+})();
+const RINGS=Array.from({length:64},(_,i)=>({r:RIN+0.02+(1-RIN-0.02)*Math.pow(i/63,1.1), a:0.04+Math.random()*0.16, w:Math.random()<0.15?1.2:0.6}));
+NOTES.forEach((n,i)=>{ n.r=0.3+0.65*((i*0.618)%1); n.th=i*2.39996; n.sp=0.045*Math.pow(n.r,-1.5)*0.55; n.x=0; n.y=0; });
+
+const VIEWS={disco:{tilt:0.9,rot:-0.2},lente:{tilt:0.24,rot:-0.38}};
+const cam={tilt:0.9,rot:-0.2,zoom:1};
+let last=performance.now(), T0=last;
+
+function frame(now){
+  const dt=Math.min(0.05,(now-last)/1000); last=now;
+  const tv=VIEWS[state.view], k=1-Math.pow(0.0025,dt);
+  cam.tilt+=(tv.tilt-cam.tilt)*k; cam.rot+=(tv.rot-cam.rot)*k; cam.zoom+=((state.sel?1.1:1)-cam.zoom)*k;
+  const spd=reduce?0.12:1;
+  for(let i=0;i<NP;i++) P.t[i]+=P.s[i]*dt*spd;
+  for(const n of NOTES) n.th+=n.sp*dt*spd;
+  draw((now-T0)/1000);
+  requestAnimationFrame(frame);
+}
+
+function draw(time){
+  ctx.setTransform(DPR,0,0,DPR,0,0);
+  ctx.clearRect(0,0,W,H);
+  // estrelas
+  ctx.fillStyle='#cfd9ea';
+  for(const s of stars){ ctx.globalAlpha=0.18+0.25*s[3]*(reduce?1:(0.6+0.4*Math.sin(time*0.8+s[0]))); ctx.fillRect(s[0],s[1],s[2],s[2]); }
+  ctx.globalAlpha=1;
+
+  const {cx,cy,base}=G, S=base*cam.zoom, T=cam.tilt, R=cam.rot, cr=Math.cos(R), sr=Math.sin(R);
+  const rh=0.13*S, dim=state.sel?0.72:1;
+
+  // halo
+  ctx.globalCompositeOperation='lighter';
+  let g=ctx.createRadialGradient(cx,cy,rh,cx,cy,S*1.1);
+  g.addColorStop(0,'rgba(240,190,100,.20)'); g.addColorStop(0.45,'rgba(200,140,60,.06)'); g.addColorStop(1,'rgba(0,0,0,0)');
+  ctx.fillStyle=g; ctx.beginPath(); ctx.ellipse(cx,cy,S*1.1,S*1.1*Math.max(T,0.45),R,0,Math.PI*2); ctx.fill();
+
+  const rings=(a0,a1)=>{ for(const q of RINGS){ ctx.strokeStyle=`rgba(232,183,90,${q.a*dim})`; ctx.lineWidth=q.w; ctx.beginPath(); ctx.ellipse(cx,cy,q.r*S,q.r*S*T,R,a0,a1); ctx.stroke(); } };
+  const parts=(far)=>{
+    let cur=-1;
+    for(let i=0;i<NP;i++){
+      const th=P.t[i], s=Math.sin(th); if(far? s>=0 : s<0) continue;
+      if(P.c[i]!==cur){cur=P.c[i]; ctx.fillStyle=COLORS[cur];}
+      const c=Math.cos(th), r=P.r[i], x0=r*c, y0=r*s*T;
+      const x=cx+(x0*cr-y0*sr)*S, y=cy+(x0*sr+y0*cr)*S;
+      const a=P.b[i]*(1+0.6*(1-T)*c)*dim; ctx.globalAlpha=a>1?1:a;
+      const z=P.z[i]; ctx.fillRect(x-z/2,y-z/2,z,z);
+    }
+    ctx.globalAlpha=1;
+  };
+
+  rings(Math.PI,Math.PI*2); parts(true);
+
+  // imagem lenteada do lado de trás do disco
+  const lens=Math.max(0,(0.75-T)/0.75);
+  if(lens>0.01){
+    for(let i=0;i<14;i++){ const rr=rh*(1.18+i*0.09); ctx.strokeStyle=`rgba(246,205,130,${(0.34-i*0.02)*lens*dim})`; ctx.lineWidth=1.1; ctx.beginPath(); ctx.ellipse(cx,cy,rr,rr*(0.92+0.08*T),R,0,Math.PI*2); ctx.stroke(); }
+  }
+
+  // horizonte de eventos
+  ctx.globalCompositeOperation='source-over';
+  g=ctx.createRadialGradient(cx,cy,0,cx,cy,rh*1.22);
+  g.addColorStop(0,'#000'); g.addColorStop(0.8,'#02040a'); g.addColorStop(1,'rgba(2,4,10,0)');
+  ctx.fillStyle=g; ctx.beginPath(); ctx.arc(cx,cy,rh*1.22,0,Math.PI*2); ctx.fill();
+  ctx.globalCompositeOperation='lighter';
+  ctx.save(); ctx.shadowColor='rgba(255,215,140,.9)'; ctx.shadowBlur=14;
+  ctx.strokeStyle='rgba(255,236,190,.95)'; ctx.lineWidth=1.6; ctx.beginPath(); ctx.arc(cx,cy,rh*1.03,0,Math.PI*2); ctx.stroke(); ctx.restore();
+  ctx.strokeStyle='rgba(255,226,160,.25)'; ctx.lineWidth=4; ctx.beginPath(); ctx.arc(cx,cy,rh*1.08,0,Math.PI*2); ctx.stroke();
+
+  rings(0,Math.PI); parts(false);
+  ctx.globalCompositeOperation='source-over';
+
+  // trilho do arco
+  if(!G.narrow){
+    ctx.strokeStyle='rgba(232,183,90,.32)'; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.arc(cx,cy,G.Ra,A0-0.05,A1+0.05); ctx.stroke();
+    ctx.setLineDash([1,5]); ctx.strokeStyle='rgba(232,183,90,.25)';
+    ctx.beginPath(); ctx.arc(cx,cy,G.Ra+16,A0-0.25,A1+0.25); ctx.stroke(); ctx.setLineDash([]);
+  }
+
+  // notas e conexões
+  const sel=state.sel, tgt=sel?anchor(sel):null;
+  for(const n of NOTES){
+    const c=Math.cos(n.th), s=Math.sin(n.th), x0=n.r*c, y0=n.r*s*T;
+    n.x=cx+(x0*cr-y0*sr)*S; n.y=cy+(x0*sr+y0*cr)*S;
+    n.on = !!sel && n.skills.includes(sel);
+  }
+  if(tgt){
+    ctx.globalCompositeOperation='lighter';
+    NOTES.forEach((n,i)=>{ if(!n.on) return;
+      const mx=(n.x+tgt.x)/2+(cx-(n.x+tgt.x)/2)*0.18, my=(n.y+tgt.y)/2+(cy-(n.y+tgt.y)/2)*0.18;
+      ctx.strokeStyle='rgba(251,214,140,.55)'; ctx.lineWidth=0.9;
+      ctx.beginPath(); ctx.moveTo(n.x,n.y); ctx.quadraticCurveTo(mx,my,tgt.x,tgt.y); ctx.stroke();
+      const u=reduce?0.5:((time*0.35+i*0.17)%1), v=1-u;
+      const px=v*v*n.x+2*v*u*mx+u*u*tgt.x, py=v*v*n.y+2*v*u*my+u*u*tgt.y;
+      ctx.fillStyle='rgba(255,240,200,.9)'; ctx.beginPath(); ctx.arc(px,py,1.6,0,Math.PI*2); ctx.fill();
+    });
+    ctx.globalCompositeOperation='source-over';
+  }
+  for(const n of NOTES){
+    const hov=state.hover===n, big=n.on||hov;
+    const a=sel&&!n.on?0.35:0.9;
+    if(big){ ctx.save(); ctx.shadowColor='rgba(251,214,140,.9)'; ctx.shadowBlur=12; }
+    ctx.strokeStyle=`rgba(251,220,150,${a})`; ctx.lineWidth=big?1.4:1;
+    ctx.fillStyle='rgba(10,14,24,.75)';
+    ctx.beginPath(); ctx.arc(n.x,n.y,big?5.5:3.6,0,Math.PI*2); ctx.fill(); ctx.stroke();
+    ctx.fillStyle=`rgba(255,240,205,${a})`; ctx.beginPath(); ctx.arc(n.x,n.y,big?2:1.3,0,Math.PI*2); ctx.fill();
+    if(big) ctx.restore();
+    if(hov || (n.on && !G.narrow && W>820)){
+      ctx.font='500 10.5px "IBM Plex Mono", ui-monospace, monospace';
+      const label=n.t; const tw=ctx.measureText(label).width;
+      let lx=n.x+9, ly=n.y-8; if(lx+tw+8>W) lx=n.x-tw-12;
+      ctx.fillStyle='rgba(8,13,22,.78)'; ctx.fillRect(lx-4,ly-10,tw+8,15);
+      ctx.fillStyle=hov?'#fbe2a6':'#d9c39a'; ctx.fillText(label,lx,ly+1);
+    }
+  }
+}
+function anchor(id){ if(G.narrow) return {x:G.cx,y:G.cy}; const i=ITEMS.indexOf(id); const p=skillPos(i); return p; }
+
+// interação com as notas
+function hit(x,y){ let best=null,bd=14*14; for(const n of NOTES){const d=(n.x-x)**2+(n.y-y)**2; if(d<bd){bd=d;best=n}} return best; }
+cv.addEventListener('pointermove',e=>{const r=cv.getBoundingClientRect(); const n=hit(e.clientX-r.left,e.clientY-r.top); state.hover=n; cv.style.cursor=n?'pointer':'default';});
+cv.addEventListener('pointerleave',()=>{state.hover=null});
+cv.addEventListener('click',e=>{const r=cv.getBoundingClientRect(); const n=hit(e.clientX-r.left,e.clientY-r.top); if(n) openNote(n); else closeNote();});
+function openNote(n){
+  const card=$('#noteCard');
+  $('#notePath').textContent=n.path; $('#noteTitle').textContent=n.t; $('#noteBody').textContent=n.body;
+  $('#noteTags').innerHTML=n.skills.map(s=>`<button data-id="${s}">${s}</button>`).join('');
+  card.hidden=false;
+  const cw=card.offsetWidth, ch=card.offsetHeight;
+  card.style.left=Math.max(8,Math.min(W-cw-8,n.x+14))+'px';
+  card.style.top=Math.max(52,Math.min(H-ch-8,n.y-24))+'px';
+}
+function closeNote(){ $('#noteCard').hidden=true; }
+$('#noteX').onclick=closeNote;
+$('#noteTags').addEventListener('click',e=>{const b=e.target.closest('[data-id]'); if(b) selectSkill(b.dataset.id);});
+
+// visões
+function setView(v){ state.view=v; $('#vDisco').setAttribute('aria-pressed',v==='disco'); $('#vLente').setAttribute('aria-pressed',v==='lente'); }
+$('#vDisco').onclick=()=>setView('disco'); $('#vLente').onclick=()=>setView('lente');
+
+/* ================= skills + abas ================= */
+function setTab(t){ const chat=t==='chat'; $('#tChat').setAttribute('aria-selected',chat); $('#tSkill').setAttribute('aria-selected',!chat); $('#pChat').hidden=!chat; $('#pSkill').hidden=chat; }
+$('#tChat').onclick=()=>setTab('chat'); $('#tSkill').onclick=()=>setTab('skill');
+
+function selectSkill(id,{keepTab=false}={}){
+  state.sel=id;
+  document.querySelectorAll('[data-id]').forEach(b=>{ if(b.closest('#noteTags'))return; const on=b.dataset.id===id; if(b.hasAttribute('aria-pressed')) b.setAttribute('aria-pressed',on); b.classList.toggle('dim', !!id && !on && b.dataset.id!=='__new'); });
+  renderSkill();
+  if(id && !keepTab) setTab('skill');
+  if(id){ const c=chipsEl.querySelector(`[data-id="${id}"]`); c&&c.scrollIntoView({inline:'center',block:'nearest',behavior:reduce?'auto':'smooth'}); }
+}
+function renderSkill(){
+  const s=SKILLS.find(x=>x.id===state.sel), el=$('#skillView');
+  if(!s){ el.innerHTML='<div class="empty">Escolha uma skill no arco para ver o SKILL.md dela e as notas que ela usa.</div>'; return; }
+  const notes=NOTES.filter(n=>n.skills.includes(s.id));
+  el.innerHTML=`<div class="sv-id">${s.id}</div><div class="sv-path">skills/${s.id}/SKILL.md</div>
+    <p class="sv-desc">${esc(s.desc)}</p>
+    <h4>Objetivo</h4><p>${esc(s.obj)}</p>
+    <h4>Passos</h4><ol>${s.passos.map(p=>`<li>${esc(p)}</li>`).join('')}</ol>
+    <h4>Entrega</h4><p>${esc(s.saida)}</p>
+    <h4>Notas ligadas · ${notes.length}</h4>
+    <div class="tags">${notes.map(n=>`<button data-note="${n.id}">${esc(n.t)}</button>`).join('')}</div>
+    <button class="use" id="useSkill">Usar com o agente</button>`;
+  el.querySelectorAll('[data-note]').forEach(b=>b.onclick=()=>openNote(NOTES.find(n=>n.id===b.dataset.note)));
+  $('#useSkill').onclick=()=>{ setTab('chat'); const i=$('#input'); i.value=`Use a skill ${s.id} para: `; autosize(); i.focus(); };
+}
+function newSkill(){ setTab('chat'); const i=$('#input'); i.value='Quero criar uma nova skill que '; autosize(); i.focus(); }
+renderSkill();
+document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ if(!$('#noteCard').hidden) closeNote(); else if(state.sel) selectSkill(null); } });
+
+/* ================= agente (Claude) ================= */
+const msgs=$('#msgs'), input=$('#input'), sendBtn=$('#send');
+let sample=null, toolsOk=false, turns=[], ctl=null, busy=false;
+const ready=(async()=>{
+  try{ sample = window.claude && window.claude.use ? await window.claude.use('sample') : null; }catch(e){ sample=null; }
+  if(!sample){ $('#offline').hidden=false; sendBtn.disabled=true; return; }
+  try{ const lim=await sample.limits(); toolsOk=!!(lim&&lim.tools); }catch(e){}
+})();
+
+function addMsg(role,html){ const d=document.createElement('div'); d.className='msg '+role; d.innerHTML=html; msgs.appendChild(d); msgs.scrollTop=msgs.scrollHeight; return d; }
+addMsg('bot','<div class="who">HORIZONTE</div>'+md('Oi, Fabio. Escolha uma skill no arco ou me diga o que precisa. Eu vejo as suas skills, as notas do disco, a agenda e os objetivos.'));
+
+const SUGS=['Quais prazos eu tenho esta semana?','Monte meu estudo de amanhã para a ALEPA','Me dê uma ideia de corte para hoje'];
+$('#sugs').innerHTML=SUGS.map(s=>`<button type="button">${esc(s)}</button>`).join('');
+$('#sugs').addEventListener('click',e=>{const b=e.target.closest('button'); if(b) send(b.textContent);});
+
+function context(){
+  const sk=SKILLS.map(s=>`- ${s.id}: ${s.desc}`).join('\n');
+  const nt=NOTES.map(n=>`- ${n.id} | ${n.path} | ${n.t}: ${n.body} [skills: ${n.skills.join(', ')}]`).join('\n');
+  const ev=Object.entries(EVENTS).map(([d,l])=>l.map(([h,t])=>`- ${d} ${h} ${t}`).join('\n')).join('\n');
+  const sel=SKILLS.find(s=>s.id===state.sel);
+  return `Você é o Horizonte, o agente pessoal do Fabio, que vive dentro de um painel em forma de buraco negro. O Fabio é advogado (OAB/PA), trabalha ganhando licitações para uma empresa de limpeza, estuda para os concursos da ALEPA (CETAP) e do TRT-8 (FCC), tem um canal de cortes de filmes no TikTok e está construindo o Trocado, um bot de finanças no WhatsApp.
+Responda sempre em português do Brasil, de forma direta e curta (no máximo uns 150 palavras, salvo se ele pedir algo longo). Use markdown simples: **negrito**, listas com "-" ou "1.", e \`código\`. Sem tabelas.
+Os dados abaixo (notificações, agenda, objetivos e notas) são EXEMPLOS de demonstração, não dados reais; se ele perguntar algo que depende de dado real, diga o que precisaria ser conectado.
+${toolsOk?'Você pode usar as ferramentas para abrir uma skill ou nota na tela e trocar a visão do disco quando isso ajudar.':''}
+Hoje é ${new Date().toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}.
+
+SKILLS:
+${sk}
+
+NOTAS (memória):
+${nt}
+
+AGENDA:
+${ev}
+
+NOTIFICAÇÕES:
+${NOTIFS.map(n=>`- ${n.t}: ${n.d}`).join('\n')}
+
+OBJETIVOS:
+${GOALS.map(g=>`- ${g.t}: ${g.txt}`).join('\n')}
+
+${sel?`Skill aberta agora na tela: ${sel.id}. Objetivo: ${sel.obj} Passos: ${sel.passos.join('; ')}. Entrega: ${sel.saida}`:'Nenhuma skill aberta na tela.'}`;
+}
+
+const TOOLS=[
+  {name:'abrir_skill',description:'Destaca uma skill no arco da tela e liga as notas que ela usa. Retorna o SKILL.md dela. Use quando o pedido corresponder a uma skill.',inputSchema:{type:'object',properties:{id:{type:'string',description:'id exato da skill, por exemplo analise-edital'}},required:['id']},
+   execute:(inp)=>{const s=SKILLS.find(x=>x.id===String(inp.id)); if(!s) throw new Error('Skill não encontrada: '+inp.id); selectSkill(s.id,{keepTab:true}); toolNote('abriu a skill '+s.id); return {id:s.id,objetivo:s.obj,passos:s.passos,entrega:s.saida};}},
+  {name:'abrir_nota',description:'Abre o cartão de uma nota da memória sobre o disco. Retorna o conteúdo da nota.',inputSchema:{type:'object',properties:{id:{type:'string',description:'id da nota, por exemplo n6'}},required:['id']},
+   execute:(inp)=>{const n=NOTES.find(x=>x.id===String(inp.id)); if(!n) throw new Error('Nota não encontrada'); openNote(n); toolNote('abriu a nota '+n.t); return {titulo:n.t,caminho:n.path,texto:n.body};}},
+  {name:'mudar_visao',description:'Troca a visão do buraco negro: "disco" (de frente) ou "lente" (inclinado).',inputSchema:{type:'object',properties:{modo:{type:'string',enum:['disco','lente']}},required:['modo']},
+   execute:(inp)=>{const m=String(inp.modo)==='lente'?'lente':'disco'; setView(m); toolNote('mudou para a visão '+m); return 'ok';}},
+];
+let curBubble=null;
+function toolNote(t){ if(!curBubble) return; const d=document.createElement('div'); d.className='tool'; d.textContent='↳ '+t; curBubble.querySelector('.tools').appendChild(d); }
+
+const ERR={
+  not_granted:'O agente não tem permissão para usar o Claude nesta página.',
+  sampling_disabled:'O Claude não está disponível para esta conta.',
+  rate_limited:'Muitas mensagens seguidas ou limite de uso atingido. Espere um pouco e envie de novo.',
+  session_expired:'Sua sessão expirou. Entre de novo no Claude e recarregue a página.',
+  refused:'O Claude não respondeu a esse pedido. Reformule e tente de novo.',
+  prompt_too_large:'A conversa ficou grande demais. Recarregue a página para começar outra.',
+};
+async function send(text){
+  text=(text||'').trim(); if(!text||busy) return;
+  await ready; if(!sample) return;
+  $('#sugs').hidden=true;
+  addMsg('user',esc(text)); input.value=''; autosize();
+  turns.push({role:'user',content:text});
+  curBubble=addMsg('bot','<div class="who">HORIZONTE</div><div class="tools"></div><div class="body"><span class="think">Pensando…</span></div>');
+  const body=curBubble.querySelector('.body');
+  busy=true; ctl=new AbortController(); sendBtn.textContent='Parar'; sendBtn.classList.add('stop'); sendBtn.type='button';
+  try{
+    const opts={cache:false,signal:ctl.signal,onText:({text})=>{body.innerHTML=md(text); msgs.scrollTop=msgs.scrollHeight;}};
+    if(toolsOk) opts.tools=TOOLS;
+    const res=await sample([{role:'user',content:context()},...turns.slice(-14)],opts);
+    body.innerHTML=md(res.text);
+    if(res.truncated) body.insertAdjacentHTML('beforeend','<div class="err">Resposta cortada. Peça em partes menores.</div>');
+    turns.push({role:'assistant',content:res.text});
+  }catch(e){
+    const code=e&&e.code;
+    if(code==='refused'){ body.innerHTML=''; }
+    else body.innerHTML=e&&e.text?md(e.text):'';
+    if(code==='cancelled'){ body.insertAdjacentHTML('beforeend','<div class="err">Interrompido.</div>'); if(e.text) turns.push({role:'assistant',content:e.text}); }
+    else body.insertAdjacentHTML('beforeend',`<div class="err">${esc(ERR[code]||'A conexão caiu no meio da resposta. Envie de novo.')}</div>`);
+    if(['not_granted','sampling_disabled','not_declared','capability_disabled','capability_removed'].includes(code)){ sendBtn.disabled=true; }
+  }finally{
+    busy=false; ctl=null; curBubble=null; sendBtn.textContent='Enviar'; sendBtn.classList.remove('stop'); sendBtn.type='submit'; msgs.scrollTop=msgs.scrollHeight;
+  }
+}
+$('#composer').addEventListener('submit',e=>{e.preventDefault(); send(input.value);});
+sendBtn.addEventListener('click',e=>{ if(busy){ e.preventDefault(); ctl&&ctl.abort(); } });
+input.addEventListener('keydown',e=>{ if(e.key==='Enter'&&!e.shiftKey){ e.preventDefault(); send(input.value);} });
+function autosize(){ input.style.height='auto'; input.style.height=Math.min(140,input.scrollHeight)+'px'; }
+input.addEventListener('input',autosize);
+
+function md(src){
+  const inline=s=>esc(s).replace(/`([^`]+)`/g,'<code>$1</code>').replace(/\*\*([^*]+)\*\*/g,'<strong>$1</strong>').replace(/(^|[^*\w])\*([^*\n]+)\*(?!\w)/g,'$1<em>$2</em>');
+  const block=t=>{ let h='',list=null; const close=()=>{if(list){h+=`</${list}>`;list=null}};
+    for(const l of t.split('\n')){ let m;
+      if((m=l.match(/^\s*[-*•]\s+(.*)/))){ if(list!=='ul'){close();h+='<ul>';list='ul'} h+='<li>'+inline(m[1])+'</li>'; }
+      else if((m=l.match(/^\s*\d+[.)]\s+(.*)/))){ if(list!=='ol'){close();h+='<ol>';list='ol'} h+='<li>'+inline(m[1])+'</li>'; }
+      else if((m=l.match(/^#{1,4}\s+(.*)/))){ close(); h+='<h4>'+inline(m[1])+'</h4>'; }
+      else if(!l.trim()) close();
+      else { close(); h+='<p>'+inline(l)+'</p>'; }
+    } close(); return h; };
+  return String(src).split('```').map((p,i)=> i%2 ? '<pre><code>'+esc(p.replace(/^[\w-]*\n/,''))+'</code></pre>' : block(p)).join('');
+}
+
+/* ================= início ================= */
+new ResizeObserver(layout).observe(stage);
+layout();
+requestAnimationFrame(t=>{last=t;T0=t;requestAnimationFrame(frame)});
+</script>
