@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import calendar
+import re
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 
@@ -15,6 +16,8 @@ from .textutil import canonical_url, norm_title, strip_html
 from .verify import assign_clusters
 
 MAX_ITEMS_PER_FEED = 60
+# Trechos de navegação que alguns feeds colam no resumo ("Notícias relacionadas", "Leia também"...)
+_NOISE = re.compile(r"\s(?:Not[íi]cias relacionadas|Leia tamb[ée]m|Saiba mais|Veja tamb[ée]m|Continua depois da publicidade)\s*:?", re.I)
 
 
 def _entry_date(entry) -> str | None:
@@ -49,6 +52,7 @@ def parse_feed(content: bytes) -> list[dict]:
         if not title or not link:
             continue
         summary = strip_html(entry.get("summary") or entry.get("description") or "")
+        summary = _NOISE.split(summary, 1)[0].strip()
         items.append({
             "title": title[:400],
             "url": link,

@@ -107,8 +107,12 @@ def tick(hz, now: datetime | None = None) -> list[str]:
 def _radar_and_refill(hz, day: str) -> dict:
     out = {k: v for k, v in radar.run_radar(hz).items() if k != "por_fonte"}
     if hz.db.scalar("SELECT 1 FROM runs WHERE job='ciclo' AND slot=? AND status='ok'", (day,)):
-        out["selecao"] = editorial.select_stories(hz, day)
-        out["producao"] = editorial.produce_pending(hz, day)
+        if pipeline._CYCLE_LOCK.acquire(blocking=False):
+            try:
+                out["selecao"] = editorial.select_stories(hz, day)
+                out["producao"] = editorial.produce_pending(hz, day)
+            finally:
+                pipeline._CYCLE_LOCK.release()
     return out
 
 

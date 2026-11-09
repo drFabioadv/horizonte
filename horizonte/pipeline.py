@@ -1,13 +1,27 @@
 """Ciclo diário do AGENTE HORIZONTE: monitorar → verificar → selecionar → produzir → distribuir."""
 from __future__ import annotations
 
+import threading
+
 from . import editorial, linkedin, llm, radar, reports
 from .notify import notify
 from .db import dumps
 from .verify import reverify_recent
 
+_CYCLE_LOCK = threading.Lock()
+
 
 def daily_cycle(hz, day: str | None = None) -> dict:
+    """Roda o ciclo completo. Se outro ciclo já estiver rodando (agendador x botão), não roda em paralelo."""
+    if not _CYCLE_LOCK.acquire(blocking=False):
+        return {"ignorado": "Já há um ciclo em andamento."}
+    try:
+        return _daily_cycle(hz, day)
+    finally:
+        _CYCLE_LOCK.release()
+
+
+def _daily_cycle(hz, day: str | None = None) -> dict:
     day = day or hz.today().isoformat()
     out: dict = {"dia": day}
     out["radar"] = {k: v for k, v in radar.run_radar(hz).items() if k != "por_fonte"}
