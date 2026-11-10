@@ -39,7 +39,7 @@ def main() -> None:
             print("O HORIZONTE já está rodando neste computador.")
             print(f"Abra o painel em {hz.settings.public_url}")
             if not args.sem_navegador:
-                webbrowser.open(hz.settings.public_url)
+                __import__("horizonte.janela", fromlist=["abrir"]).abrir(hz.settings.public_url, hz.settings.data_dir)
             sys.exit(3)
         print(f"A porta {hz.settings.port} está sendo usada por outro programa.")
         print("Mude HORIZONTE_PORT no arquivo .env (ex.: 8788) e o endereço de retorno no app do LinkedIn.")
@@ -58,7 +58,7 @@ def main() -> None:
     app = create_app(hz)
     if not args.sem_navegador:
         try:
-            webbrowser.open(hz.settings.public_url)
+            __import__("horizonte.janela", fromlist=["abrir"]).abrir(hz.settings.public_url, hz.settings.data_dir)
         except Exception:
             pass
     uvicorn.run(app, host=hz.settings.host, port=hz.settings.port, log_level="warning", use_colors=False)

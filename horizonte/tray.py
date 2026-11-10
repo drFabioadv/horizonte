@@ -47,7 +47,9 @@ def main() -> None:
 
     if _port_busy(hz.settings.host, hz.settings.port):
         if _horizonte_alive(hz.settings.port):
-            webbrowser.open(url)  # já está aberto: só mostra o painel
+            from .janela import abrir
+
+            abrir(url, hz.settings.data_dir)  # já está aberto: só mostra a janela
             return
         _message_box("HORIZONTE", f"A porta {hz.settings.port} está sendo usada por outro programa.\n\n"
                                   "Abra o arquivo .env na pasta do HORIZONTE e troque HORIZONTE_PORT (ex.: 8788).")
@@ -82,7 +84,9 @@ def main() -> None:
     threading.Thread(target=serve_forever, name="horizonte-servidor", daemon=True).start()
 
     def open_panel(icon=None, item=None):
-        webbrowser.open(f"{url}/entrar?c={app.state.issue_login()}")
+        from .janela import abrir
+
+        abrir(f"{url}/entrar?c={app.state.issue_login()}", hz.settings.data_dir)
 
     def run_cycle(icon, item):
         threading.Thread(target=lambda: daily_cycle(hz), daemon=True).start()
@@ -137,7 +141,8 @@ def main() -> None:
         threading.Thread(target=lambda: update_now(icon), daemon=True).start()
 
     menu = pystray.Menu(
-        pystray.MenuItem("Abrir painel", open_panel, default=True),
+        pystray.MenuItem("Abrir HORIZONTE", open_panel, default=True),
+        pystray.MenuItem("Abrir no navegador", lambda icon, item: webbrowser.open(f"{url}/entrar?c={app.state.issue_login()}")),
         pystray.MenuItem("Rodar ciclo do dia agora", run_cycle),
         pystray.MenuItem(lambda item: "Retomar operação" if hz.prefs()["pausado"] else "Pausar operação", toggle_pause),
         pystray.Menu.SEPARATOR,

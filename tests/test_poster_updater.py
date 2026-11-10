@@ -119,3 +119,12 @@ def test_old_signature_is_migrated(tmp_path, monkeypatch):
     h2 = Horizonte(load_settings())
     assert h2.prefs()["assinatura"] == ""
     h2.db.close()
+
+
+def test_app_window_command(tmp_path):
+    from horizonte import janela
+
+    cmd = janela.command("http://localhost:8788/entrar?c=x", tmp_path, "msedge.exe")
+    assert cmd[0] == "msedge.exe" and cmd[1] == "--app=http://localhost:8788/entrar?c=x"
+    assert any(c.startswith("--user-data-dir=") and "janela" in c for c in cmd)
+    assert (tmp_path / "janela").is_dir()
