@@ -22,19 +22,33 @@ MIN_SCORE = 35
 X_LIMIT = 280
 LINKEDIN_LIMIT = 3000
 
-SYSTEM = """Você é o editor-chefe do HORIZONTE — Direito. Política. Sociedade.
-Assinatura editorial: "Informação com contexto. Análise com responsabilidade. Opinião com fundamento."
-Tom: crítico, analítico e institucional. Linguagem formal, mas acessível. Português do Brasil.
+SYSTEM = """Você escreve como {autor}, {perfil}. Os textos saem no perfil pessoal dele, assinados por ele,
+em primeira pessoa. Não é jornal nem página institucional: é a coluna de opinião de um advogado.
 
-Regras inegociáveis:
-- Use SOMENTE os fatos presentes no PACOTE DE FONTES. Não acrescente fatos, nomes, cargos, datas, números ou citações que não estejam no pacote.
-- Não invente estatísticas, decisões judiciais, citações ou opiniões de pessoas.
-- Projeto de lei, PEC ou medida provisória não é lei aprovada; investigação não é condenação; acusação não é fato comprovado.
-- Distinga: fato confirmado, informação atribuída a uma fonte ("segundo..."), alegação, interpretação e opinião editorial.
-- Respeite a presunção de inocência, a dignidade humana e os direitos fundamentais. Sem ataques pessoais, sem sensacionalismo.
-- Sem identidade partidária: avalie decisões pelos fundamentos e consequências, com o mesmo critério para qualquer governo ou grupo.
-- A opinião é a linha editorial do HORIZONTE, sempre fundamentada; nunca atribua opiniões pessoais ao dono do perfil.
-- Nada de frases genéricas para encher espaço. Responda sempre em JSON válido."""
+COMO ELE ESCREVE
+- Toma posição. Em toda pauta ele diz com clareza o que pensa: se a decisão está certa, errada ou certa pela metade, e por quê.
+- Abre com a tese, numa frase curta que prende. Nada de "Nesta semana..." ou de resumir a notícia antes de opinar.
+- Argumenta como advogado: princípios constitucionais (legalidade, devido processo, separação de poderes,
+  presunção de inocência, dignidade humana, segurança jurídica), competência de cada órgão, efeito prático na vida das pessoas.
+  Cite princípios e institutos pelo nome; NÃO cite número de artigo, lei ou súmula que não esteja nas fontes.
+- Enfrenta o melhor argumento contrário e responde a ele. Opinião forte não é opinião rasa.
+- Linguagem natural de quem fala bem: frases curtas e médias, verbos fortes, uma ou outra frase de efeito, exemplos concretos.
+  Pode usar "eu", "penso", "me parece", "o problema é".
+- Termina com uma conclusão firme ou uma provocação concreta, não com pergunta genérica.
+
+PROIBIDO (deixa o texto com cara de máquina)
+- Clichês: "em um cenário", "nesse contexto", "é fundamental", "é importante destacar", "vale ressaltar", "diante disso",
+  "em suma", "cabe ressaltar", "não é apenas", "mais do que nunca", "um passo importante", "levanta questões", "suscita debates",
+  "reflexão", "impactos significativos", "desafios e oportunidades".
+- Listas de três adjetivos, travessões em excesso, frases que só repetem a notícia, tom de nota oficial ou de release.
+
+LIMITES (ele é advogado inscrito na OAB; a opinião é forte, os fatos são exatos)
+- Use SOMENTE os fatos do PACOTE DE FONTES. Não invente fatos, nomes, cargos, datas, números, decisões nem citações.
+- Projeto de lei, PEC ou MP não é lei; investigação não é condenação; acusação não é fato. Não chame ninguém de culpado,
+  criminoso ou corrupto sem condenação nas fontes.
+- Critique decisões, argumentos e instituições; não ataque a pessoa. Sem sensacionalismo e sem captação de clientela.
+- O mesmo rigor para qualquer governo, partido ou tribunal. Sem pedir voto e sem bordão de campanha.
+- Responda sempre em JSON válido."""
 
 ANALYSIS_PROMPT = """PACOTE DE FONTES (única base factual permitida):
 {pack}
@@ -42,16 +56,17 @@ ANALYSIS_PROMPT = """PACOTE DE FONTES (única base factual permitida):
 VERIFICAÇÃO: {verification}
 ALERTAS: {alerts}
 
-Produza a análise editorial em JSON com exatamente estas chaves:
+Produza a análise em JSON com exatamente estas chaves:
 {{
-  "titulo": "título informativo, sem sensacionalismo (até 110 caracteres)",
-  "o_que_aconteceu": "2 a 3 frases, só com fatos do pacote",
-  "contexto": "contexto institucional/jurídico/social que ajuda a entender, sem fatos novos não presentes no pacote",
+  "titulo": "título com a posição dele, direto e sem sensacionalismo (até 100 caracteres). Ex.: 'A decisão está certa, mas chegou tarde'",
+  "tese": "a opinião dele em UMA frase forte e citável (até 160 caracteres)",
+  "o_que_aconteceu": "2 frases, só com fatos do pacote",
+  "contexto": "o que o leitor precisa saber para entender, sem fatos que não estejam no pacote",
   "fatos_confirmados": ["fato confirmado 1", "fato 2"],
   "informacoes_atribuidas": ["o que é atribuído a uma fonte, com 'segundo X'"],
-  "relevancia": "por que importa para Direito, política ou sociedade",
-  "analise_critica": "análise crítica fundamentada (3 a 5 frases), marcando o que é interpretação",
-  "reflexao": "uma pergunta ou reflexão para o público",
+  "relevancia": "o que muda na vida real e para quem",
+  "analise_critica": "a argumentação dele (4 a 6 frases): a tese, os fundamentos jurídicos, o contra-argumento mais forte e a resposta",
+  "reflexao": "a conclusão firme ou provocação final, em 1 frase",
   "cautelas": ["o que ainda não se sabe ou pode mudar"]
 }}"""
 
@@ -61,22 +76,22 @@ ADAPT_PROMPT = """PACOTE DE FONTES:
 ANÁLISE APROVADA:
 {analysis}
 
-Adapte para as duas redes, em JSON com exatamente estas chaves:
+Escreva os textos dele para as duas redes, em JSON com exatamente estas chaves:
 {{
   "linkedin": {{
-    "texto": "post de 900 a 1800 caracteres: abertura forte e sóbria, o que aconteceu, contexto, análise crítica fundamentada e uma reflexão final. Parágrafos curtos. Sem links e sem hashtags no texto (serão acrescentados depois).",
+    "texto": "post de 900 a 1600 caracteres, em primeira pessoa. 1ª linha: a tese, curta e forte (é o que aparece antes do 'ver mais'). Depois: o fato em 1 ou 2 frases, os argumentos dele, o contra-argumento e a resposta, e um fecho firme. Parágrafos de 1 a 3 frases. Sem links e sem hashtags no texto.",
     "hashtags": ["3 a 5 hashtags pertinentes, sem o símbolo #"],
-    "poster_frase": "comentário crítico para estampar no pôster: 1 ou 2 frases, até 200 caracteres, sobre a decisão, o direito ou o efeito social; sem números que não estejam nas fontes"
+    "poster_frase": "a frase do pôster: a opinião dele numa frase de impacto, citável, até 150 caracteres, sem números"
   }},
   "x": {{
     "chamada": "título curto para a central (até 80 caracteres)",
-    "texto": "post de até 200 caracteres, direto, com o fato e um ângulo analítico. Sem link e sem hashtags.",
-    "thread": ["se o tema exigir, 2 a 4 posts de até 260 caracteres cada; caso contrário, lista vazia"],
+    "texto": "post de até 220 caracteres: a opinião dele, seca e incisiva, com o fato em poucas palavras. Sem link e sem hashtags.",
+    "thread": ["se o tema pedir, 2 a 4 posts de até 260 caracteres desenvolvendo o argumento; senão, lista vazia"],
     "hashtags": ["1 a 3 hashtags, sem #"],
     "orientacao": "dica curta de publicação, se necessária, ou string vazia"
   }}
 }}
-A linguagem do LinkedIn e do X deve ser diferente: no LinkedIn, profissional e desenvolvida; no X, concisa e incisiva."""
+LinkedIn e X com linguagem diferente: no LinkedIn, o advogado desenvolvendo o raciocínio; no X, a opinião em uma porrada só, sem perder a elegância."""
 
 # ---------------------------------------------------------------- seleção
 
@@ -210,6 +225,18 @@ _GUILT = re.compile(r"\b(culpad[oa]s?|criminos[oa]s?|corrupt[oa]s?|bandid[oa]s?|
 _CAMPAIGN = re.compile(r"\b(vote em|vote no|vote na|não vote|fora (bolsonaro|lula)|lula lá|mito)\b", re.I)
 
 
+_CLICHES = re.compile(
+    r"\b(em um cenário|neste cenário|nesse contexto|neste contexto|é fundamental|é importante destacar|vale ressaltar|"
+    r"cabe ressaltar|diante disso|em suma|mais do que nunca|um passo importante|levanta questões|suscita debates|"
+    r"impactos significativos|desafios e oportunidades)\b", re.I)
+
+
+def check_style(text: str) -> list[str]:
+    """Trava de estilo (só pede reescrita; nunca suspende a pauta sozinha)."""
+    found = sorted({m.group(0).lower() for m in _CLICHES.finditer(text)})
+    return [f"Tire os clichês e reescreva com voz própria: {', '.join(found)}."] if found else []
+
+
 def check_text(text: str, pack: str, flags: list[str], year: int) -> list[str]:
     """Travas factuais: tudo que parece dado precisa estar nas fontes."""
     problems = []
@@ -269,12 +296,23 @@ def _ask_checked(hz, prompt: str, pack: str, flags: list[str], extract) -> tuple
     """Pede à IA e confere; uma segunda tentativa recebe a lista de problemas."""
     year = hz.today().year
     problems: list[str] = []
+    prefs = hz.prefs()
+    system = SYSTEM.format(autor=prefs.get("autor_nome") or "o autor do perfil",
+                           perfil=prefs.get("autor_perfil") or "advogado que escreve sobre Direito, política e sociedade")
+    fallback = None  # versão factualmente correta, mas com clichês
     for attempt in range(2):
         full = prompt if not problems else prompt + "\n\nCORRIJA estes problemas da versão anterior:\n- " + "\n- ".join(problems)
-        data = llm.generate_json(hz, full, SYSTEM, temperature=0.35 if attempt == 0 else 0.2)
-        problems = check_text(extract(data), pack, flags, year)
-        if not problems:
+        data = llm.generate_json(hz, full, system, temperature=0.6 if attempt == 0 else 0.4)
+        text = extract(data)
+        problems = check_text(text, pack, flags, year)
+        if problems:
+            continue
+        style = check_style(text) if attempt == 0 else []
+        if not style:
             return data, []
+        fallback, problems = data, style  # só estilo: tenta melhorar uma vez
+    if fallback is not None:
+        return fallback, []
     return None, problems
 
 

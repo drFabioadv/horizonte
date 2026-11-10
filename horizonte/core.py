@@ -32,6 +32,9 @@ class Horizonte:
         seed_sources(self.db)
         if self.db.get_pref("ollama_modelo") in (None, ""):
             self.db.set_pref("ollama_modelo", self.settings.ollama_model)
+        # a assinatura antiga "HORIZONTE — ..." deixava os posts com cara de página; agora o post é do autor
+        if self.db.get_pref("assinatura") == "HORIZONTE — Direito. Política. Sociedade.":
+            self.db.set_pref("assinatura", "")
 
     # ---------- preferências ----------
     def prefs(self) -> dict:

@@ -1,9 +1,9 @@
-"""Pôsteres do HORIZONTE: arte tipográfica própria (sem foto de terceiros) para os posts.
+"""Pôsteres de opinião com a identidade do autor (não do HORIZONTE).
 
-Formato 1080x1350 (4:5), o que o LinkedIn mostra maior no feed. Duas variações:
-- pôster de notícia: editoria, título, comentário crítico e fontes;
-- pôster livre: uma frase sua, com assinatura.
-As fontes tipográficas (Lora e Poppins) são livres (SIL Open Font License) e vêm junto.
+Visual de coluna de opinião: papel claro, a OPINIÃO em destaque, a notícia como contexto
+("Sobre:") e a assinatura do autor com monograma, nome e registro profissional.
+Formato 1080x1350 (4:5), o que o LinkedIn mostra maior no feed. Sem foto de terceiros.
+Fontes tipográficas livres (Lora e Poppins, SIL Open Font License) vêm junto.
 """
 from __future__ import annotations
 
@@ -15,17 +15,23 @@ from pathlib import Path
 from PIL import Image, ImageDraw, ImageFont
 
 W, H = 1080, 1350
-M = 90  # margem lateral
+M = 96  # margem lateral
 FONTS = Path(__file__).parent / "assets" / "fonts"
 
-NAVY_TOP = (11, 16, 32)
-NAVY_BOT = (20, 30, 58)
-GOLD = (226, 178, 92)
-WHITE = (244, 240, 230)
-MUTED = (160, 168, 190)
-
+TEMAS = {
+    "claro": {"bg": (243, 238, 229), "ink": (24, 24, 27), "muted": (104, 100, 94), "line": (206, 198, 186)},
+    "escuro": {"bg": (21, 23, 28), "ink": (240, 236, 228), "muted": (150, 150, 158), "line": (60, 62, 70)},
+}
+ACENTO = {  # uma cor por editoria, como seções de um jornal
+    "direito": (122, 31, 43),     # bordô
+    "politica": (30, 58, 95),     # azul-tinta
+    "sociedade": (47, 93, 80),    # verde-oliva
+    None: (122, 31, 43),
+}
+ACENTO_ESCURO = {"direito": (214, 120, 120), "politica": (130, 168, 214), "sociedade": (120, 190, 160), None: (214, 120, 120)}
 CATEGORIAS = {"direito": "DIREITO", "politica": "POLÍTICA", "sociedade": "SOCIEDADE"}
 MESES = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"]
+_PARTICULAS = {"da", "de", "do", "das", "dos", "e"}
 
 
 def _font(name: str, size: int, weight: int | None = None) -> ImageFont.FreeTypeFont:
@@ -41,8 +47,8 @@ def _font(name: str, size: int, weight: int | None = None) -> ImageFont.FreeType
 def _wrap(draw: ImageDraw.ImageDraw, text: str, font, width: int) -> list[str]:
     lines: list[str] = []
     for para in str(text).split("\n"):
-        words, cur = para.split(), ""
-        for w in words:
+        cur = ""
+        for w in para.split():
             test = f"{cur} {w}".strip()
             if draw.textlength(test, font=font) <= width or not cur:
                 cur = test
@@ -53,8 +59,9 @@ def _wrap(draw: ImageDraw.ImageDraw, text: str, font, width: int) -> list[str]:
     return [l for l in lines if l] or [""]
 
 
-def _fit(draw, text: str, name: str, sizes: range, width: int, max_lines: int, weight=None):
-    """Maior tamanho de fonte em que o texto cabe no número de linhas; senão corta com reticências."""
+def _fit(draw, text: str, name: str, sizes, width: int, max_lines: int, weight=None):
+    """Maior fonte em que o texto cabe no número de linhas; senão corta com reticências."""
+    font, lines = None, []
     for size in sizes:
         font = _font(name, size, weight)
         lines = _wrap(draw, text, font, width)
@@ -67,37 +74,6 @@ def _fit(draw, text: str, name: str, sizes: range, width: int, max_lines: int, w
     return font, lines
 
 
-def _background() -> Image.Image:
-    img = Image.new("RGB", (W, H), NAVY_TOP)
-    d = ImageDraw.Draw(img)
-    for y in range(H):
-        t = y / H
-        d.line([(0, y), (W, y)], fill=tuple(int(a + (b - a) * t) for a, b in zip(NAVY_TOP, NAVY_BOT)))
-    # sol nascendo no horizonte, discreto, no rodapé
-    glow = Image.new("RGBA", (W, H), (0, 0, 0, 0))
-    g = ImageDraw.Draw(glow)
-    cx, cy = W // 2, H - 150
-    for r, a in ((330, 7), (240, 10), (170, 13)):
-        g.ellipse([cx - r, cy - r, cx + r, cy + r], fill=GOLD + (a,))
-    img.paste(glow, (0, 0), glow)
-    d = ImageDraw.Draw(img)
-    d.arc([cx - 115, cy - 115, cx + 115, cy + 115], 180, 360, fill=GOLD, width=5)
-    d.rectangle([0, cy, W, H], fill=NAVY_BOT)
-    d.line([(M, cy), (W - M, cy)], fill=WHITE, width=2)
-    return img
-
-
-def _brand(d: ImageDraw.ImageDraw) -> None:
-    # marca no topo: arco + nome
-    d.arc([M, 78, M + 56, 134], 180, 360, fill=GOLD, width=4)
-    d.line([(M - 4, 106), (M + 60, 106)], fill=WHITE, width=2)
-    d.text((M + 78, 86), "HORIZONTE", font=_font("Poppins-Medium.ttf", 26), fill=WHITE, spacing=0)
-    # rodapé
-    foot = "Direito. Política. Sociedade."
-    f = _font("Poppins-Regular.ttf", 24)
-    d.text(((W - d.textlength(foot, font=f)) / 2, H - 100), foot, font=f, fill=MUTED)
-
-
 def _data_pt(iso: str | None) -> str:
     try:
         dt = datetime.fromisoformat(str(iso).replace("Z", "+00:00")) if iso else datetime.now()
@@ -106,15 +82,47 @@ def _data_pt(iso: str | None) -> str:
     return f"{dt.day:02d} {MESES[dt.month - 1]} {dt.year}"
 
 
-def frase_da_analise(analysis: dict, limite: int = 230) -> str:
-    """Comentário do pôster quando a IA não trouxe um: a reflexão ou o começo da análise crítica."""
-    for key in ("reflexao", "analise_critica", "relevancia"):
+def iniciais(nome: str) -> str:
+    partes = [p for p in re.split(r"\s+", nome.strip()) if p and p.lower() not in _PARTICULAS]
+    return "".join(p[0].upper() for p in partes[:2]) or "•"
+
+
+def autor_de(prefs: dict) -> dict:
+    return {
+        "nome": str(prefs.get("autor_nome") or "").strip(),
+        "titulo": str(prefs.get("autor_titulo") or "").strip(),
+        "tema": prefs.get("poster_tema") if prefs.get("poster_tema") in TEMAS else "claro",
+    }
+
+
+def _signature(img: Image.Image, autor: dict, acento, tema: dict, y: int) -> None:
+    """Assinatura do autor: monograma num círculo, nome e registro profissional."""
+    d = ImageDraw.Draw(img)
+    nome, titulo = autor.get("nome") or "", autor.get("titulo") or ""
+    if not nome:
+        return
+    r = 44
+    cx, cy = M + r, y + r
+    d.ellipse([cx - r, cy - r, cx + r, cy + r], outline=acento, width=3)
+    mono = iniciais(nome)
+    fm = _font("Lora-Variable.ttf", 38, 700)
+    tw = d.textlength(mono, font=fm)
+    bbox = d.textbbox((0, 0), mono, font=fm)
+    d.text((cx - tw / 2, cy - (bbox[3] + bbox[1]) / 2), mono, font=fm, fill=acento)
+    x = M + 2 * r + 26
+    d.text((x, y + (6 if titulo else 26)), nome, font=_font("Poppins-Bold.ttf", 30), fill=tema["ink"])
+    if titulo:
+        d.text((x, y + 50), titulo, font=_font("Poppins-Regular.ttf", 23), fill=tema["muted"])
+
+
+def frase_da_analise(analysis: dict, limite: int = 200) -> str:
+    """Frase do pôster quando a IA não trouxe uma: a tese, ou o começo da análise."""
+    for key in ("tese", "analise_critica", "reflexao", "relevancia"):
         txt = str(analysis.get(key) or "").strip()
         if txt:
             if len(txt) > limite:
-                cut = re.split(r"(?<=[.!?])\s", txt)
                 acc = ""
-                for s in cut:
+                for s in re.split(r"(?<=[.!?])\s", txt):
                     if len(acc) + len(s) + 1 > limite:
                         break
                     acc = f"{acc} {s}".strip()
@@ -123,75 +131,87 @@ def frase_da_analise(analysis: dict, limite: int = 230) -> str:
     return ""
 
 
-def render_news(titulo: str, frase: str, categoria: str | None, fontes: list[str], data_iso: str | None) -> Image.Image:
-    img = _background()
-    _brand(ImageDraw.Draw(img))
-    layer = Image.new("RGBA", (W, H), (0, 0, 0, 0))  # conteúdo numa camada, para centralizar se sobrar espaço
-    d = ImageDraw.Draw(layer)
-    width = W - 2 * M
-    y = 200
-    # editoria + data
-    label = CATEGORIAS.get(categoria or "", "ANÁLISE")
-    fl = _font("Poppins-Bold.ttf", 24)
-    lw = d.textlength(label, font=fl)
-    d.rounded_rectangle([M, y, M + lw + 36, y + 46], radius=23, outline=GOLD, width=2)
-    d.text((M + 18, y + 8), label, font=fl, fill=GOLD)
-    d.text((M + lw + 60, y + 9), _data_pt(data_iso), font=_font("Poppins-Regular.ttf", 24), fill=MUTED)
-    y += 90
-    # título
-    ft, lines = _fit(d, titulo, "Lora-Variable.ttf", range(66, 42, -4), width, 5, weight=700)
-    lh = int(ft.size * 1.22)
-    for line in lines:
-        d.text((M, y), line, font=ft, fill=WHITE)
-        y += lh
-    y += 30
-    d.line([(M, y), (M + 120, y)], fill=GOLD, width=4)
-    y += 44
-    # comentário
-    if frase:
-        room = (H - 380) - y
-        for size in range(42, 28, -2):
-            fq, ql = _fit(d, frase, "Lora-Italic-Variable.ttf", range(size, size - 1, -1), width - 30,
-                          max(2, room // int(size * 1.38)), weight=500)
-            if not ql[-1].endswith("…"):
-                break
-        qh = int(fq.size * 1.38)
-        d.text((M - 6, y - 26), "“", font=_font("Lora-Variable.ttf", 90, 700), fill=GOLD)
-        for line in ql:
-            d.text((M + 30, y + 14), line, font=fq, fill=WHITE)
-            y += qh
-    gap = (H - 400) - y
-    shift = gap // 2 - 40 if gap > 200 else 0
-    img.paste(layer, (0, max(0, shift)), layer)
+def render_news(titulo: str, frase: str, categoria: str | None, fontes: list[str], data_iso: str | None,
+                autor: dict | None = None) -> Image.Image:
+    autor = autor or {}
+    tema = TEMAS[autor.get("tema") or "claro"]
+    escuro = autor.get("tema") == "escuro"
+    acento = (ACENTO_ESCURO if escuro else ACENTO).get(categoria, ACENTO[None])
+    img = Image.new("RGB", (W, H), tema["bg"])
     d = ImageDraw.Draw(img)
-    # fontes
+    width = W - 2 * M
+    d.rectangle([0, 0, W, 14], fill=acento)  # faixa de cor da editoria
+
+    # cabeçalho: OPINIÃO · EDITORIA ............ data
+    y = 92
+    fl = _font("Poppins-Bold.ttf", 22)
+    label = f"OPINIÃO  ·  {CATEGORIAS.get(categoria or '', 'ANÁLISE')}"
+    d.text((M, y), label, font=fl, fill=acento)
+    dt = _data_pt(data_iso)
+    fd = _font("Poppins-Regular.ttf", 22)
+    d.text((W - M - d.textlength(dt, font=fd), y), dt, font=fd, fill=tema["muted"])
+    d.line([(M, y + 50), (W - M, y + 50)], fill=tema["line"], width=2)
+
+    # a opinião é o destaque
+    sig_top = H - 200
+    area_top = y + 120
+    sobre_h = 0
+    if titulo:
+        fs, sl = _fit(d, "Sobre: " + titulo, "Poppins-Regular.ttf", range(26, 20, -2), width, 3)
+        sobre_h = int(fs.size * 1.45) * len(sl) + 70
+    room = sig_top - 70 - sobre_h - area_top
+    frase = frase or titulo
+    fq, ql = None, []
+    for size in range(78, 40, -4):
+        lh = int(size * 1.22)
+        fq, ql = _fit(d, frase, "Lora-Variable.ttf", range(size, size - 1, -1), width, max(2, room // lh), weight=600)
+        if not ql[-1].endswith("…"):
+            break
+    lh = int(fq.size * 1.22)
+    block = lh * len(ql) + sobre_h
+    yq = area_top + max(0, (sig_top - 70 - area_top - block) // 2 - 20)
+    for line in ql:
+        d.text((M, yq), line, font=fq, fill=tema["ink"])
+        yq += lh
+    if titulo:
+        yq += 34
+        d.line([(M, yq), (M + 90, yq)], fill=acento, width=5)
+        yq += 34
+        for line in sl:
+            d.text((M, yq), line, font=fs, fill=tema["muted"])
+            yq += int(fs.size * 1.45)
+
+    # rodapé: fontes (miúdo) e assinatura
+    d.line([(M, sig_top - 34), (W - M, sig_top - 34)], fill=tema["line"], width=2)
+    _signature(img, autor, acento, tema, sig_top)
     if fontes:
         txt = "Fontes: " + ", ".join(dict.fromkeys(fontes))
-        ff, fls = _fit(d, txt, "Poppins-Regular.ttf", range(24, 18, -2), width, 2)
-        fy = H - 365
-        for line in fls:
-            d.text((M, fy), line, font=ff, fill=MUTED)
-            fy += int(ff.size * 1.4)
+        ff, fls = _fit(d, txt, "Poppins-Regular.ttf", range(19, 15, -2), width, 1)
+        d.text((M, H - 52), fls[0], font=ff, fill=tema["muted"])
     return img
 
 
-def render_free(frase: str, autor: str = "") -> Image.Image:
-    img = _background()
+def render_free(frase: str, autor: dict | None = None, categoria: str | None = None) -> Image.Image:
+    autor = autor or {}
+    if isinstance(autor, str):
+        autor = {"nome": autor}
+    tema = TEMAS[autor.get("tema") or "claro"]
+    acento = (ACENTO_ESCURO if autor.get("tema") == "escuro" else ACENTO).get(categoria, ACENTO[None])
+    img = Image.new("RGB", (W, H), tema["bg"])
     d = ImageDraw.Draw(img)
-    _brand(d)
     width = W - 2 * M
-    fq, lines = _fit(d, frase, "Lora-Variable.ttf", range(76, 38, -4), width, 8, weight=600)
-    lh = int(fq.size * 1.3)
-    block = lh * len(lines) + (80 if autor else 0)
-    y = max(220, (H - 380 - block) // 2 + 100)
-    d.text((M - 8, y - 110), "“", font=_font("Lora-Variable.ttf", 150, 700), fill=GOLD)
+    d.rectangle([0, 0, W, 14], fill=acento)
+    sig_top = H - 200
+    fq, lines = _fit(d, frase, "Lora-Variable.ttf", range(88, 40, -4), width, 9, weight=600)
+    lh = int(fq.size * 1.24)
+    block = lh * len(lines)
+    y = max(200, (sig_top - 60 - block) // 2 + 40)
+    d.text((M - 6, y - int(fq.size * 1.5)), "“", font=_font("Lora-Variable.ttf", int(fq.size * 2), 700), fill=acento)
     for line in lines:
-        d.text((M, y), line, font=fq, fill=WHITE)
+        d.text((M, y), line, font=fq, fill=tema["ink"])
         y += lh
-    if autor:
-        y += 30
-        d.line([(M, y + 18), (M + 60, y + 18)], fill=GOLD, width=3)
-        d.text((M + 80, y), autor, font=_font("Poppins-Medium.ttf", 30), fill=GOLD)
+    d.line([(M, sig_top - 34), (W - M, sig_top - 34)], fill=tema["line"], width=2)
+    _signature(img, autor, acento, tema, sig_top)
     return img
 
 
@@ -201,12 +221,12 @@ def save(hz, img: Image.Image, nome: str) -> Path:
     return path
 
 
-def image_entry(path: Path, observacao: str) -> dict:
+def image_entry(path: Path, observacao: str, credito: str = "Arte própria") -> dict:
     return {
         "url": f"/uploads/{path.name}",
         "arquivo": str(path),
         "autorizada": True,
-        "credito": "Arte: HORIZONTE",
+        "credito": credito,
         "origem": None,
         "poster": True,
         "observacao": observacao,
@@ -219,7 +239,9 @@ def for_post(hz, post: dict, analysis: dict, frase: str | None = None) -> dict:
 
     fontes = [s.get("veiculo") or s.get("fonte") or "" for s in loads(post.get("sources"), [])]
     frase = (frase or "").strip() or str(analysis.get("poster_frase") or "").strip() or frase_da_analise(analysis)
-    img = render_news(post.get("title") or analysis.get("titulo") or "", frase, post.get("category"),
-                      [f for f in fontes if f], post.get("news_date"))
+    autor = autor_de(hz.prefs())
+    img = render_news(analysis.get("titulo") or post.get("title") or "", frase, post.get("category"),
+                      [f for f in fontes if f], post.get("news_date"), autor)
     path = save(hz, img, f"poster-{post['id']}")
-    return image_entry(path, "Pôster tipográfico gerado pelo HORIZONTE (sem foto de terceiros).")
+    return image_entry(path, "Pôster de opinião com a sua assinatura (sem foto de terceiros).",
+                       f"Arte: {autor['nome']}" if autor["nome"] else "Arte própria")

@@ -86,3 +86,36 @@ def test_updater_applies_without_touching_user_files(hz, tmp_path, world):
     assert not (target / "data").exists()
     assert updater.check(hz)["disponivel"] is False
     assert updater.apply(hz, target=target)["atualizado"] is False
+
+
+def test_style_retry_then_accepts(hz, world):
+    from horizonte import editorial
+
+    calls = []
+
+    def fake(hz_, prompt, system, temperature=0.4, timeout=600):
+        calls.append(system)
+        return {"t": "Nesse contexto, é fundamental agir." if len(calls) == 1 else "Eu penso que o STF errou."}
+
+    import horizonte.llm as llm
+    orig = llm.generate_json
+    llm.generate_json = fake
+    try:
+        data, probs = editorial._ask_checked(hz, "p", "pack", [], lambda d: d["t"])
+    finally:
+        llm.generate_json = orig
+    assert data["t"].startswith("Eu penso") and not probs and len(calls) == 2
+    assert "Fabio Garcia da Cruz" in calls[0] and "primeira pessoa" in calls[0]
+
+
+def test_old_signature_is_migrated(tmp_path, monkeypatch):
+    monkeypatch.setenv("HORIZONTE_DATA_DIR", str(tmp_path / "d2"))
+    from horizonte.config import load_settings
+    from horizonte.core import Horizonte
+
+    h = Horizonte(load_settings())
+    h.db.set_pref("assinatura", "HORIZONTE — Direito. Política. Sociedade.")
+    h.db.close()
+    h2 = Horizonte(load_settings())
+    assert h2.prefs()["assinatura"] == ""
+    h2.db.close()

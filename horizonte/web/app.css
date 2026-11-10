@@ -163,3 +163,4 @@ th{font-family:var(--f-mono);font-weight:500;font-size:11px;letter-spacing:.08em
 .poster img{width:100%;height:auto;display:block;border-radius:10px;border:1px solid rgba(226,178,92,.25)}
 .poster figcaption{font-size:12px;margin-top:4px}
 .post-box textarea{width:100%;min-height:220px}
+.tese{margin:10px 0 4px;padding:10px 14px;border-left:3px solid var(--gold, #e2b25c);font-family:Newsreader,Georgia,serif;font-size:19px;font-style:italic}

@@ -35,7 +35,7 @@ def test_production_creates_linkedin_and_x(hz, world):
     assert len(li) == 3 and len(xs) == 3
     for p in li:
         assert p["status"] == "agendado" and p["scheduled_for"]
-        assert "Fontes consultadas:" in p["body"] and "HORIZONTE — Direito. Política. Sociedade." in p["body"]
+        assert "Fontes consultadas:" in p["body"] and "HORIZONTE" not in p["body"]
         assert len(loads(p["hashtags"])) <= 5
     for p in xs:
         assert p["status"] == "pronto"

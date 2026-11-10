@@ -190,9 +190,9 @@ VIEWS.editorial = async (main) => {
     <div class="page-head"><div><h1>Central Editorial</h1><p>Pautas selecionadas, verificação, análise e os textos de cada rede, com o histórico completo.</p></div>
       <div class="actions"><button class="btn" id="bLivre">Pôster avulso</button></div></div>
     <div class="card" id="livreBox" hidden style="margin-bottom:14px"><h2>Pôster avulso</h2>
-      <p class="muted" style="font-size:13px;margin-top:0">Uma frase sua no visual do HORIZONTE, para baixar e postar onde quiser.</p>
+      <p class="muted" style="font-size:13px;margin-top:0">Uma frase sua, com a sua assinatura, para baixar e postar onde quiser.</p>
       <div class="form"><div class="field" style="grid-column:1/-1"><label for="lvF">Frase</label><textarea id="lvF" rows="3" placeholder="Eu não sei tudo, mas sei aprender, e isso me torna capaz de tudo."></textarea></div>
-        <div class="field"><label for="lvA">Assinatura (opcional)</label><input type="text" id="lvA" placeholder="Fabio Garcia"></div></div>
+        <div class="field"><label for="lvA">Outro nome na assinatura (opcional)</label><input type="text" id="lvA" placeholder="deixe vazio para usar o seu"></div></div>
       <div class="actions" style="margin-top:8px"><button class="btn primary" id="lvGo">Gerar pôster</button></div>
       <div id="lvOut"></div></div>
     <div class="split">
@@ -229,6 +229,7 @@ async function renderStory() {
     <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:10px">${stamp(g.verification)}${cat(s.category)}${state(STORY, s.status)}<span class="faint mono" style="font-size:12px">pauta #${s.id}</span></div>
     <h2 class="headline">${esc(a.titulo || g.title)}</h2>
     <p class="muted" style="font-size:13px">${esc(s.reason || "")}</p>
+    ${a.tese ? `<blockquote class="tese">${esc(a.tese)}</blockquote>` : ""}
     <div class="actions" style="margin-top:10px">
       ${["suspensa", "aguardando_ia"].includes(s.status) ? '<button class="btn" id="bProd">Produzir de novo</button>' : ""}
       ${!["suspensa", "publicada"].includes(s.status) ? '<button class="btn danger" id="bSusp">Suspender pauta</button>' : ""}
@@ -479,9 +480,13 @@ async function cfgGeral() {
         <div class="field"><label for="r3">Radar a cada (minutos)</label><input type="number" min="15" id="r3" name="radar_intervalo_min" value="${p.radar_intervalo_min}"></div>
         <div class="field"><label for="r4">Idade máxima da notícia (horas)</label><input type="number" min="6" id="r4" name="idade_maxima_horas" value="${p.idade_maxima_horas}"></div>
       </div>
-      <h2>Assinatura e transparência</h2>
+      <h2>Sua identidade</h2>
       <div class="form">
-        <div class="field" style="grid-column:1/-1"><label for="s1">Assinatura no fim dos posts do LinkedIn</label><input type="text" id="s1" name="assinatura" value="${esc(p.assinatura)}"></div>
+        <div class="field"><label for="a1">Seu nome (assina os pôsteres e orienta a voz dos textos)</label><input type="text" id="a1" name="autor_nome" value="${esc(p.autor_nome)}"></div>
+        <div class="field"><label for="a2">Linha abaixo do nome no pôster</label><input type="text" id="a2" name="autor_titulo" value="${esc(p.autor_titulo)}"></div>
+        <div class="field" style="grid-column:1/-1"><label for="a3">Quem é você (a IA escreve com essa voz)</label><input type="text" id="a3" name="autor_perfil" value="${esc(p.autor_perfil)}"></div>
+        <div class="field"><label for="a4">Fundo dos pôsteres</label><select id="a4" name="poster_tema"><option value="claro" ${p.poster_tema === "claro" ? "selected" : ""}>Claro (papel)</option><option value="escuro" ${p.poster_tema === "escuro" ? "selected" : ""}>Escuro</option></select></div>
+        <div class="field" style="grid-column:1/-1"><label for="s1">Frase no fim dos posts do LinkedIn (opcional)</label><input type="text" id="s1" name="assinatura" value="${esc(p.assinatura)}"></div>
         <label class="switch"><input type="checkbox" name="rodape_ia" ${p.rodape_ia ? "checked" : ""}> Informar no rodapé que o conteúdo teve apoio de IA</label>
         <label class="switch"><input type="checkbox" name="notificacoes_windows" ${p.notificacoes_windows ? "checked" : ""}> Notificações do Windows</label>
         <label class="switch"><input type="checkbox" name="poster_auto" ${p.poster_auto ? "checked" : ""}> Gerar pôster automático para cada post do LinkedIn</label>

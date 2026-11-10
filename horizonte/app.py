@@ -347,7 +347,11 @@ def create_app(hz: Horizonte | None = None, start_scheduler: bool = True) -> Fas
         frase = str(payload.get("frase") or "").strip()[:400]
         if not frase:
             raise HTTPException(400, "Escreva a frase do pôster.")
-        path = poster.save(hz, poster.render_free(frase, str(payload.get("autor") or "").strip()[:60]), "livre")
+        autor = poster.autor_de(hz.prefs())
+        outro = str(payload.get("autor") or "").strip()[:60]
+        if outro and outro != autor["nome"]:
+            autor = {**autor, "nome": outro, "titulo": ""}
+        path = poster.save(hz, poster.render_free(frase, autor, payload.get("categoria")), "livre")
         return {"ok": True, "url": f"/uploads/{path.name}"}
 
     @app.get("/uploads/{name}")
