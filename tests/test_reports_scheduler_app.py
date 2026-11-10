@@ -102,3 +102,25 @@ def test_api_requires_login_and_works(hz):
     assert c.post("/api/linkedin/teste", json={}).status_code == 400  # exige confirmação explícita
     up = c.post(f"/api/posts/{li['posts'][0]['id']}/imagem", files={"arquivo": ("foto.png", b"\x89PNG....", "image/png")})
     assert up.status_code == 200 and up.json()["imagem"]["autorizada"]
+
+
+def test_tray_one_time_login_code(hz):
+    app = create_app(hz, start_scheduler=False)
+    c = TestClient(app)
+    code = app.state.issue_login()
+    r = c.get(f"/entrar?c={code}", follow_redirects=False)
+    assert r.status_code == 303 and "hz_sessao" in r.headers.get("set-cookie", "")
+    assert c.get("/api/estado").status_code == 200
+    c2 = TestClient(app)
+    r2 = c2.get(f"/entrar?c={code}", follow_redirects=False)  # código não vale duas vezes
+    assert "hz_sessao" not in r2.headers.get("set-cookie", "")
+    assert c2.get("/api/estado").status_code == 401
+
+
+def test_icon_files_exist():
+    from pathlib import Path
+
+    import horizonte
+
+    assets = Path(horizonte.__file__).parent / "assets"
+    assert (assets / "horizonte.ico").stat().st_size > 1000 and (assets / "horizonte.png").exists()

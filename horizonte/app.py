@@ -24,6 +24,7 @@ from .security import token_ok
 WEB = Path(__file__).parent / "web"
 COOKIE = "hz_sessao"
 OPEN_PATHS = {"/api/saude", "/api/login", "/api/linkedin/callback"}
+LOGIN_CODE_TTL = 120  # segundos
 
 
 def create_app(hz: Horizonte | None = None, start_scheduler: bool = True) -> FastAPI:
@@ -43,6 +44,21 @@ def create_app(hz: Horizonte | None = None, start_scheduler: bool = True) -> Fas
     app = FastAPI(title="HORIZONTE", version=__version__, docs_url=None, redoc_url=None, lifespan=lifespan)
     app.state.hz = hz
     app.state.scheduler = sched
+    login_codes: dict[str, float] = {}
+
+    def issue_login() -> str:
+        """Código de uso único para o ícone da bandeja abrir o painel já logado."""
+        import time as _t
+
+        code = secrets.token_urlsafe(24)
+        now = _t.time()
+        for k, exp in list(login_codes.items()):
+            if exp < now:
+                login_codes.pop(k, None)
+        login_codes[code] = now + LOGIN_CODE_TTL
+        return code
+
+    app.state.issue_login = issue_login
 
     # ------------------------------------------------------------ segurança
     @app.middleware("http")
@@ -65,6 +81,16 @@ def create_app(hz: Horizonte | None = None, start_scheduler: bool = True) -> Fas
             raise HTTPException(401, "Chave incorreta.")
         resp = JSONResponse({"ok": True})
         resp.set_cookie(COOKIE, session_value, httponly=True, samesite="lax", max_age=60 * 60 * 24 * 90)
+        return resp
+
+    @app.get("/entrar")
+    def entrar(c: str = ""):
+        import time as _t
+
+        exp = login_codes.pop(c, None)
+        resp = RedirectResponse("/", status_code=303)
+        if exp and exp >= _t.time():
+            resp.set_cookie(COOKIE, session_value, httponly=True, samesite="lax", max_age=60 * 60 * 24 * 90)
         return resp
 
     @app.post("/api/logout")

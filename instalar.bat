@@ -21,9 +21,11 @@ if errorlevel 1 (
   exit /b 1
 )
 if not exist ".env" copy ".env.example" ".env" >nul
+powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0scripts\atalhos.ps1" -Modo criar
 echo.
 echo Instalação concluída.
-echo 1. Abra o arquivo .env no Bloco de Notas e preencha o LinkedIn (veja o README).
-echo 2. Rode iniciar.bat para abrir o HORIZONTE.
-echo 3. Rode instalar_inicio_automatico.bat para ele ligar sozinho com o Windows.
+echo - Agora existe o ícone HORIZONTE na área de trabalho e no menu Iniciar.
+echo - Clique nele: o HORIZONTE fica na bandeja (perto do relógio) e abre o painel.
+echo - Para ligar sozinho com o Windows: instalar_inicio_automatico.bat
+echo - Para fixar na barra de tarefas: botão direito no ícone, "Mostrar mais opções", "Fixar na barra de tarefas".
 pause

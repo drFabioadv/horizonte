@@ -15,8 +15,25 @@ $toast = New-Object Windows.UI.Notifications.ToastNotification $xml
 """
 
 
+_TRAY = None
+
+
+def set_tray(icon) -> None:
+    """Quando o HORIZONTE roda na bandeja, os avisos saem pelo próprio ícone."""
+    global _TRAY
+    _TRAY = icon
+
+
 def notify(hz, title: str, body: str) -> None:
-    if not hz.prefs().get("notificacoes_windows") or platform.system() != "Windows":
+    if not hz.prefs().get("notificacoes_windows"):
+        return
+    if _TRAY is not None:
+        try:
+            _TRAY.notify(body[:250], title[:60])
+            return
+        except Exception:
+            pass
+    if platform.system() != "Windows":
         return
     script = _PS.replace("{title}", escape(title).replace("'", "''")).replace("{body}", escape(body).replace("'", "''"))
     try:

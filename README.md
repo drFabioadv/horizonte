@@ -38,8 +38,12 @@ Com uma placa de vídeo de 16 GB, os modelos `gemma3:12b` (padrão) e `qwen3:14b
    ollama pull gemma3:12b
    ```
 5. Configure o LinkedIn (seção 5).
-6. Dê dois cliques em **`iniciar.bat`**. O navegador abre em `http://localhost:8787`.
-7. Entre com a **chave do painel**. Ela aparece na janela preta ao iniciar e também fica no arquivo `data/admin.token`. Se preferir uma chave sua, defina `HORIZONTE_ADMIN_TOKEN` no `.env`.
+6. Dê dois cliques no ícone **HORIZONTE** que apareceu na **área de trabalho** (o instalador cria esse atalho e outro no menu Iniciar; se faltar, rode `criar_atalhos.bat`).
+   - O HORIZONTE fica na **bandeja do sistema**, perto do relógio. Clique no ícone para abrir o painel já logado. Com o botão direito, o menu tem: abrir painel, rodar ciclo agora, pausar/retomar e sair.
+   - Para fixar na **barra de tarefas**: botão direito no ícone da área de trabalho → *Mostrar mais opções* → *Fixar na barra de tarefas*.
+7. Se abrir o painel por outro caminho, entre com a **chave do painel**, que fica no arquivo `data/admin.token`. Se preferir uma chave sua, defina `HORIZONTE_ADMIN_TOKEN` no `.env`.
+
+O `iniciar.bat` continua existindo para quem preferir ver a janela de registros (útil para diagnosticar problemas).
 
 Linux/macOS: `./iniciar.sh`.
 
@@ -57,8 +61,9 @@ Linux/macOS: `./iniciar.sh`.
 
 ## 4. Inicialização automática
 
-- Dê dois cliques em **`instalar_inicio_automatico.bat`**. O HORIZONTE passa a abrir **sem janela** toda vez que você entra no Windows. Para desfazer, use `remover_inicio_automatico.bat`.
-- O `iniciar.bat` reinicia o sistema sozinho se ele parar.
+- Dê dois cliques em **`instalar_inicio_automatico.bat`**. O HORIZONTE passa a abrir na **bandeja, sem janela**, toda vez que você entra no Windows. Para desfazer, use `remover_inicio_automatico.bat`.
+- Se o servidor interno cair, a bandeja o religa sozinha em 15 segundos (o `iniciar.bat` faz o mesmo).
+- Se você clicar no ícone com o HORIZONTE já aberto, ele só abre o painel, sem abrir uma segunda cópia.
 - **Deixe o computador ligado**: em *Configurações do Windows → Sistema → Energia*, coloque "Suspender" como **Nunca** quando estiver na tomada. Com o PC desligado nada roda; quando ele ligar, o ciclo do dia é feito na hora.
 
 ## 5. Conexão com o LinkedIn (API oficial, gratuita)
@@ -130,7 +135,7 @@ Por padrão, **nenhuma fonte tem imagem liberada**. A Agência Brasil, por exemp
 
 | Sintoma | O que fazer |
 |---|---|
-| Painel não abre | Veja se a janela do `iniciar.bat` está aberta. Se a porta 8787 estiver ocupada, mude `HORIZONTE_PORT` no `.env` (e o endereço de retorno no app do LinkedIn). |
+| Painel não abre | Veja se o ícone do HORIZONTE está na bandeja (setinha ^ perto do relógio). Se a porta 8787 estiver ocupada por outro programa, mude `HORIZONTE_PORT` no `.env` (ex.: 8788) e o endereço de retorno no app do LinkedIn. |
 | "IA local não encontrada" | Abra o Ollama. No terminal, `ollama list` precisa mostrar o modelo configurado. |
 | Pautas "Aguardando IA local" | Ligue o Ollama. O radar seguinte produz as pautas pendentes, ou use **Rodar ciclo do dia agora**. |
 | LinkedIn "Não configurado" | Preencha `LINKEDIN_CLIENT_ID` e `LINKEDIN_CLIENT_SECRET` no `.env` e reinicie. |
@@ -189,6 +194,8 @@ horizonte/
   scheduler.py   rotinas automáticas sem duplicidade
   pipeline.py    ciclo diário do AGENTE HORIZONTE
   app.py         servidor do painel e API
+  tray.py        ícone na bandeja do Windows
+  assets/        ícone do HORIZONTE
   web/           painel (HTML, CSS e JS)
 backup/          versão antiga do Horizonte e diagnóstico
 tests/           testes automatizados
