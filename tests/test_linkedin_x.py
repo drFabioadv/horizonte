@@ -38,7 +38,11 @@ def test_publish_due_respects_auto_mode_and_pause(hz, world):
     assert linkedin.publish_due(hz)["publicados"] == 0
     hz.set_prefs({"pausado": False})
     res = linkedin.publish_due(hz)
-    assert res["publicados"] == 3
+    assert res["publicados"] == 1 and res["aguardando"] == 2  # atrasados saem um por vez
+    assert linkedin.publish_due(hz)["publicados"] == 0  # espera o intervalo mínimo
+    for _ in range(2):  # simula o intervalo passando
+        hz.db.execute("UPDATE posts SET published_at='2020-01-01T00:00:00+00:00' WHERE status='publicado'")
+        assert linkedin.publish_due(hz)["publicados"] == 1
     rows = hz.db.query("SELECT status, external_url FROM posts WHERE network='linkedin'")
     assert all(r["status"] == "publicado" and r["external_url"].startswith("https://www.linkedin.com/feed/update/urn:li:share:") for r in rows)
     body = world.posts_created[0]

@@ -67,7 +67,7 @@ def test_scheduler_publishes_when_auto(hz, world):
 
     hz.db.execute("UPDATE posts SET scheduled_for=? WHERE network='linkedin'", (now_iso(),))
     fired = scheduler.tick(hz, _at(hz, 9, 0))
-    assert "publicador" in fired and len(world.posts_created) == 3
+    assert "publicador" in fired and len(world.posts_created) == 1  # um por vez, com intervalo
 
 
 def test_api_requires_login_and_works(hz):

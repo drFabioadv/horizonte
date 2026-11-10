@@ -23,6 +23,7 @@ TOKEN_URL = "https://www.linkedin.com/oauth/v2/accessToken"
 REVOKE_URL = "https://www.linkedin.com/oauth/v2/revoke"
 USERINFO_URL = "https://api.linkedin.com/v2/userinfo"
 POSTS_URL = "https://api.linkedin.com/rest/posts"
+INTERVALO_MIN = 90  # mínimo entre dois posts automáticos
 IMAGES_URL = "https://api.linkedin.com/rest/images?action=initializeUpload"
 SCOPES = "openid profile w_member_social"
 PROVIDER = "linkedin"
@@ -395,9 +396,24 @@ def publish_due(hz) -> dict:
     if not prefs["linkedin_auto"] or not _valid_token(hz):
         out["aguardando"] = len(due)
         return out
-    for r in due[:3]:  # no máximo 3 por passada, para não "despejar" posts atrasados de uma vez
-        res = publish_post(hz, r["id"])
-        out["publicados" if res.get("ok") else "falhas"] += 1
+    # Se o PC ficou desligado e vários horários passaram, não "despeja" tudo de uma vez:
+    # publica um por vez, com pelo menos INTERVALO_MIN minutos entre um post e outro.
+    last = hz.db.one("SELECT MAX(published_at) AS t FROM posts WHERE network='linkedin' AND status='publicado'")
+    if last and last["t"]:
+        from datetime import datetime, timedelta, timezone
+
+        try:
+            when = datetime.fromisoformat(last["t"].replace("Z", "+00:00"))
+            if when.tzinfo is None:
+                when = when.replace(tzinfo=timezone.utc)
+            if datetime.now(timezone.utc) - when < timedelta(minutes=INTERVALO_MIN):
+                out["aguardando"] = len(due)
+                return out
+        except ValueError:
+            pass
+    res = publish_post(hz, due[0]["id"])
+    out["publicados" if res.get("ok") else "falhas"] += 1
+    out["aguardando"] = len(due) - 1
     return out
 
 
