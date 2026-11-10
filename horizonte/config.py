@@ -133,4 +133,7 @@ DEFAULT_PREFS: dict = {
     "ollama_modelo": "",
     "notificacoes_windows": True,
     "poster_auto": True,
+    "nuvem_ativa": True,
+    "producao_vespera": True,
+    "horario_producao_vespera": "20:30",
 }

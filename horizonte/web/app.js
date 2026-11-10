@@ -313,6 +313,19 @@ VIEWS.linkedin = async (main) => {
         <div class="actions" style="margin-top:8px"><button class="btn" id="bTest" ${e.conectado ? "" : "disabled"}>Publicar teste</button></div>
       </div>
     </div>
+    <div class="card" style="margin-bottom:14px"><h2>Nuvem</h2>
+      ${(() => { const n = d.nuvem || {}; const sn = n.status_nuvem || {};
+        if (!n.configurado) return `<p class="muted" style="font-size:13px;margin:0">Desligada. Para publicar com o PC desligado, coloque o <code>HORIZONTE_GITHUB_TOKEN</code> no arquivo .env e reinicie.</p>`;
+        return `<p style="margin:0 0 8px">${n.ativa ? '<span class="state ok">Ativa</span> quem publica nos horários é a nuvem do GitHub' : '<span class="state warn">Em espera</span> ligue o modo automático para a nuvem publicar'}</p>
+        <table><tbody>
+          <tr><th>Fila enviada</th><td>${n.enviado_em ? fmt(n.enviado_em) + ` · ${n.itens ?? 0} post(s)` : "—"}</td></tr>
+          <tr><th>Última conferência</th><td>${n.sincronizado_em ? fmt(n.sincronizado_em) : "—"}</td></tr>
+          <tr><th>Nuvem disse</th><td>${sn.em ? `${fmt(sn.em)} · ${esc(sn.mensagem || sn.situacao)}` : "ainda não rodou"}</td></tr>
+        </tbody></table>
+        ${n.erro ? `<div class="notice bad" style="margin-top:8px">${esc(n.erro)}</div>` : ""}
+        ${sn.situacao === "erro" ? `<div class="notice bad" style="margin-top:8px">${esc(sn.mensagem)}</div>` : ""}
+        <div class="actions" style="margin-top:10px"><button class="btn" id="bNuvem">Enviar fila agora</button><a class="btn" href="${esc(n.acoes_url)}" target="_blank" rel="noopener">Ver execuções no GitHub</a></div>`; })()}
+    </div>
     <div class="card"><h2>Publicações</h2><div class="list">${d.posts.map((p) => `
       <div class="row">
         <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap"><span class="t">${esc(p.title)}</span><span>${state(LIST, p.status)}</span></div>
@@ -329,6 +342,8 @@ VIEWS.linkedin = async (main) => {
             ${["agendado", "falhou", "suspenso"].includes(p.status) ? `<label class="btn small" style="cursor:pointer">Anexar imagem sua<input type="file" accept="image/jpeg,image/png,image/gif" data-up="${p.id}" hidden></label>` : ""}
           </div></details>
       </div>`).join("") || '<div class="empty">Nenhuma publicação ainda.</div>'}</div></div>`;
+  const bn = $("#bNuvem");
+  if (bn) bn.onclick = async () => { bn.disabled = true; const r = await api("/api/nuvem/sincronizar", { method: "POST" }); toast(r.ok ? "Fila enviada para a nuvem." : r.mensagem, 6000); route(); };
   const auto = $("#auto");
   if (auto) auto.onchange = async () => { try { await api("/api/linkedin/modo", { method: "POST", body: { automatico: auto.checked } }); toast(auto.checked ? "Modo automático ligado." : "Modo automático desligado."); } catch (err) { auto.checked = false; toast(err.message); } };
   const bd = $("#bDisc");
@@ -479,6 +494,9 @@ async function cfgGeral() {
         <div class="field"><label for="r2">Horário do relatório diário</label><input type="time" id="r2" name="horario_relatorio" value="${p.horario_relatorio}"></div>
         <div class="field"><label for="r3">Radar a cada (minutos)</label><input type="number" min="15" id="r3" name="radar_intervalo_min" value="${p.radar_intervalo_min}"></div>
         <div class="field"><label for="r4">Idade máxima da notícia (horas)</label><input type="number" min="6" id="r4" name="idade_maxima_horas" value="${p.idade_maxima_horas}"></div>
+        <label class="switch"><input type="checkbox" name="producao_vespera" ${p.producao_vespera ? "checked" : ""}> Escrever de noite os posts do dia seguinte</label>
+        <div class="field"><label for="r5">Horário da produção da noite</label><input type="time" id="r5" name="horario_producao_vespera" value="${p.horario_producao_vespera}"></div>
+        <label class="switch"><input type="checkbox" name="nuvem_ativa" ${p.nuvem_ativa ? "checked" : ""}> Publicar pela nuvem (funciona com o PC desligado)</label>
       </div>
       <h2>Sua identidade</h2>
       <div class="form">

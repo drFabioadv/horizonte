@@ -41,6 +41,10 @@ def _daily_cycle(hz, day: str | None = None) -> dict:
     st = linkedin.status(hz)
     if st["conectado"] and st["dias_restantes"] is not None and st["dias_restantes"] <= 7:
         notify(hz, "HORIZONTE — LinkedIn", f"A autorização do LinkedIn vence em {st['dias_restantes']} dia(s). Reconecte no painel.")
+    from . import nuvem
+
+    if nuvem.active(hz):
+        out["nuvem"] = nuvem.sync(hz)
     hz.log("info", "agente", "Ciclo diário concluído: " + dumps(
         {"selecionadas": len(out["selecao"]["selecionadas"]), "produzidas": out["producao"]["produzidas"]}))
     return out

@@ -396,6 +396,12 @@ def publish_due(hz) -> dict:
     if not prefs["linkedin_auto"] or not _valid_token(hz):
         out["aguardando"] = len(due)
         return out
+    from . import nuvem
+
+    if nuvem.active(hz):  # quem publica no horário é a nuvem (evita post em dobro)
+        out["aguardando"] = len(due)
+        out["nuvem"] = True
+        return out
     # Se o PC ficou desligado e vários horários passaram, não "despeja" tudo de uma vez:
     # publica um por vez, com pelo menos INTERVALO_MIN minutos entre um post e outro.
     last = hz.db.one("SELECT MAX(published_at) AS t FROM posts WHERE network='linkedin' AND status='publicado'")

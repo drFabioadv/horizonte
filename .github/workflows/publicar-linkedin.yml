@@ -1,0 +1,67 @@
+# Publica no LinkedIn os posts que o HORIZONTE deixou na fila, mesmo com o PC desligado.
+# Gratuito: repositório público tem minutos ilimitados no GitHub Actions.
+# Roda a cada 15 min das 07:00 às 21:45 de Belém (10:00–00:45 UTC). O GitHub pode atrasar alguns minutos.
+name: Publicar no LinkedIn
+
+on:
+  schedule:
+    - cron: "*/15 10-23 * * *"
+    - cron: "0,15,30,45 0 * * *"
+  workflow_dispatch: {}
+
+concurrency:
+  group: publicar-linkedin
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  publicar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Código do HORIZONTE
+        uses: actions/checkout@v4
+
+      - name: Fila (branch nuvem)
+        id: fila
+        run: |
+          if git ls-remote --exit-code --heads origin nuvem >/dev/null 2>&1; then
+            git fetch --depth 1 origin nuvem
+            git worktree add nuvem-dados origin/nuvem
+            echo "tem=sim" >> "$GITHUB_OUTPUT"
+          else
+            echo "Ainda não há fila: abra o HORIZONTE no PC com o token do GitHub."
+            echo "tem=nao" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/setup-python@v5
+        if: steps.fila.outputs.tem == 'sim'
+        with:
+          python-version: "3.12"
+
+      - name: Dependências
+        if: steps.fila.outputs.tem == 'sim'
+        run: pip install -q "httpx>=0.27" "cryptography>=42" tzdata
+
+      - name: Publicar o que venceu
+        if: steps.fila.outputs.tem == 'sim'
+        env:
+          HZ_NUVEM_CHAVE: ${{ secrets.HZ_NUVEM_CHAVE }}
+        run: python -m horizonte.nuvem publicar --pasta nuvem-dados
+
+      - name: Anotar o que saiu
+        if: steps.fila.outputs.tem == 'sim'
+        run: |
+          cd nuvem-dados
+          if [ -n "$(git status --porcelain publicados.json)" ]; then
+            git config user.name "horizonte-nuvem"
+            git config user.email "horizonte-nuvem@users.noreply.github.com"
+            git add publicados.json
+            git commit -q -m "nuvem: publicados"
+            for i in 1 2 3; do
+              git pull -q --rebase origin nuvem && git push -q origin HEAD:nuvem && break
+              sleep 5
+            done
+          fi

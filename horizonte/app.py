@@ -14,7 +14,7 @@ from fastapi import Body, FastAPI, File, HTTPException, Request, UploadFile
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
 
-from . import __version__, editorial, images, linkedin, llm, pipeline, radar, reports, xcentral
+from . import __version__, editorial, images, linkedin, llm, nuvem, pipeline, radar, reports, xcentral
 from .config import DEFAULT_PREFS
 from .core import Horizonte
 from .db import dumps, loads, now_iso, row_dict, utcnow
@@ -246,6 +246,7 @@ def create_app(hz: Horizonte | None = None, start_scheduler: bool = True) -> Fas
 
     @app.post("/api/pautas/{sid}/suspender")
     def suspender(sid: int, payload: dict = Body(default={})):
+        nuvem.soon()
         reason = payload.get("motivo") or "Suspensa manualmente pelo usuário."
         hz.db.execute("UPDATE stories SET status='suspensa', reason=?, updated_at=? WHERE id=?", (reason, now_iso(), sid))
         hz.db.execute("UPDATE posts SET status='suspenso', error=?, updated_at=? WHERE story_id=? AND status IN ('agendado','pronto')",
@@ -263,7 +264,7 @@ def create_app(hz: Horizonte | None = None, start_scheduler: bool = True) -> Fas
     def li_panel():
         posts = [row_dict(r, ("hashtags", "sources", "image")) for r in hz.db.query(
             "SELECT * FROM posts WHERE network='linkedin' ORDER BY COALESCE(scheduled_for, created_at) DESC LIMIT 80")]
-        return {"estado": linkedin.status(hz), "posts": posts}
+        return {"estado": linkedin.status(hz), "posts": posts, "nuvem": nuvem.status(hz)}
 
     @app.get("/api/linkedin/conectar")
     def li_connect():
@@ -300,15 +301,18 @@ def create_app(hz: Horizonte | None = None, start_scheduler: bool = True) -> Fas
 
     @app.post("/api/linkedin/posts/{pid}/publicar")
     def li_publish_now(pid: int):
+        nuvem.soon()
         hz.db.execute("UPDATE posts SET scheduled_for=? WHERE id=? AND status='agendado'", (now_iso(), pid))
         return linkedin.publish_post(hz, pid, force=True)
 
     @app.post("/api/linkedin/posts/{pid}/resolver")
     def li_resolve(pid: int, payload: dict = Body(...)):
+        nuvem.soon()
         return linkedin.resolve_post(hz, pid, str(payload.get("acao")), payload.get("url"))
 
     @app.put("/api/posts/{pid}/texto")
     def edit_text(pid: int, payload: dict = Body(...)):
+        nuvem.soon()
         text = str(payload.get("texto", "")).strip()
         if not text:
             raise HTTPException(400, "O texto não pode ficar vazio.")
@@ -321,6 +325,7 @@ def create_app(hz: Horizonte | None = None, start_scheduler: bool = True) -> Fas
 
     @app.post("/api/posts/{pid}/imagem")
     async def upload(pid: int, arquivo: UploadFile = File(...)):
+        nuvem.soon()
         if arquivo.content_type not in ("image/jpeg", "image/png", "image/gif"):
             raise HTTPException(400, "Envie JPG, PNG ou GIF.")
         data = await arquivo.read()
@@ -335,10 +340,19 @@ def create_app(hz: Horizonte | None = None, start_scheduler: bool = True) -> Fas
 
     @app.post("/api/pautas/{sid}/poster")
     def pauta_poster(sid: int, payload: dict = Body(default={})):
+        nuvem.soon()
         img = editorial.attach_poster(hz, sid, frase=str(payload.get("frase") or "")[:300] or None)
         if not img:
             raise HTTPException(400, "Esta pauta não tem post do LinkedIn aguardando publicação.")
         return {"ok": True, "imagem": img}
+
+    @app.get("/api/nuvem")
+    def nuvem_status():
+        return nuvem.status(hz)
+
+    @app.post("/api/nuvem/sincronizar")
+    def nuvem_sync():
+        return nuvem.sync(hz, force_push=True)
 
     @app.post("/api/poster/livre")
     def poster_livre(payload: dict = Body(...)):

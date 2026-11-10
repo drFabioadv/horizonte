@@ -72,11 +72,18 @@ def tick(hz, now: datetime | None = None) -> list[str]:
 
     h, m = _hhmm(prefs["horario_ciclo"])
     cycle_at = now.replace(hour=h, minute=m, second=0, microsecond=0)
-    if now >= cycle_at:
+    vh, vm = _hhmm(prefs.get("horario_producao_vespera") or "20:30")
+    evening = bool(prefs.get("producao_vespera")) and now >= now.replace(hour=vh, minute=vm, second=0, microsecond=0)
+    if now >= cycle_at and not evening:  # de noite, o ciclo atrasado de hoje dá lugar ao de amanhã
         if run_job(hz, "ciclo", today.isoformat(), pipeline.daily_cycle, today.isoformat()) is not None:
             fired.append("ciclo")
             if claim(hz, "radar", radar_slot):  # o ciclo já passou pelo radar nesta faixa
                 finish(hz, "radar", radar_slot, "ok", {"coberto_pelo_ciclo": True})
+    # De noite: já escreve os posts de amanhã (a nuvem publica de dia, com o PC desligado).
+    if evening:
+        tomorrow = (today + timedelta(days=1)).isoformat()
+        if run_job(hz, "ciclo", tomorrow, pipeline.daily_cycle, tomorrow) is not None:
+            fired.append("ciclo_amanha")
     # Ao longo do dia: completa pautas que faltaram (ex.: IA ligou depois do ciclo).
     if run_job(hz, "radar", radar_slot, _radar_and_refill, today.isoformat()) is not None:
         fired.append("radar")
@@ -84,6 +91,10 @@ def tick(hz, now: datetime | None = None) -> list[str]:
     res = linkedin.publish_due(hz)
     if res.get("publicados") or res.get("falhas"):
         fired.append("publicador")
+    from . import nuvem
+
+    if nuvem.maybe_sync(hz) is not None:
+        fired.append("nuvem")
 
     h, m = _hhmm(prefs["horario_relatorio"])
     report_at = now.replace(hour=h, minute=m, second=0, microsecond=0)
