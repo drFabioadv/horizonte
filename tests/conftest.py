@@ -81,7 +81,7 @@ class FakeWorld:
     def __init__(self):
         self.calls: list[httpx.Request] = []
         self.ollama_up = True
-        self.ollama_models = ["gemma3:12b"]
+        self.ollama_models = ["gemma4:12b"]
         self.llm_mode = "ok"  # ok | bad_once | always_bad
         self.llm_calls = 0
         self.linkedin_mode = "ok"  # ok | 401 | 429 | 426_once | 500
@@ -168,7 +168,7 @@ def hz(tmp_path, world, monkeypatch):
     monkeypatch.setenv("LINKEDIN_CLIENT_SECRET", "segredo-teste")
     monkeypatch.setenv("HORIZONTE_ADMIN_TOKEN", "chave-teste")
     monkeypatch.setenv("LINKEDIN_API_VERSION", "")
-    monkeypatch.setenv("OLLAMA_MODEL", "gemma3:12b")
+    monkeypatch.setenv("OLLAMA_MODEL", "gemma4:12b")
     for k in ("HORIZONTE_SECRET_KEY",):
         monkeypatch.delenv(k, raising=False)
     from horizonte.config import load_settings

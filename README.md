@@ -22,11 +22,11 @@ Tudo fica salvo em `data/horizonte.db` (SQLite), inclusive depois de reiniciar.
 |---|---|---|
 | Windows 10/11 (também roda em Linux e macOS) | rodar o sistema | — |
 | [Python 3.11 ou mais novo](https://www.python.org/downloads/) | backend | grátis |
-| [Ollama](https://ollama.com/download) + um modelo (ex.: `gemma3:12b`) | escrever as análises | grátis |
+| [Ollama](https://ollama.com/download) + um modelo (ex.: `gemma4:12b`) | escrever as análises | grátis |
 | Conta no LinkedIn + app no LinkedIn Developers | publicar no seu perfil | grátis |
 | Computador ligado e conectado | rotinas automáticas | — |
 
-Com uma placa de vídeo de 16 GB, os modelos `gemma3:12b` (padrão) e `qwen3:14b` rodam bem.
+Com uma placa de vídeo de 16 GB, os modelos `gemma4:12b` (padrão) e `qwen3:14b` rodam bem.
 
 ## 2. Instalação (Windows)
 
@@ -35,7 +35,7 @@ Com uma placa de vídeo de 16 GB, os modelos `gemma3:12b` (padrão) e `qwen3:14b
 3. Dê dois cliques em **`instalar.bat`**. Ele cria o ambiente `.venv`, instala as dependências e cria o arquivo `.env`.
 4. Instale o Ollama e, no Prompt de Comando, baixe o modelo:
    ```
-   ollama pull gemma3:12b
+   ollama pull gemma4:12b
    ```
 5. Configure o LinkedIn (seção 5).
 6. Dê dois cliques no ícone **HORIZONTE** que apareceu na **área de trabalho** (o instalador cria esse atalho e outro no menu Iniciar; se faltar, rode `criar_atalhos.bat`).

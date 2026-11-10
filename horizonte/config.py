@@ -102,7 +102,7 @@ def load_settings() -> Settings:
         ).strip(),
         linkedin_version=os.environ.get("LINKEDIN_API_VERSION", "").strip(),
         ollama_url=os.environ.get("OLLAMA_URL", "http://127.0.0.1:11434").rstrip("/"),
-        ollama_model=os.environ.get("OLLAMA_MODEL", "gemma3:12b").strip(),
+        ollama_model=os.environ.get("OLLAMA_MODEL", "gemma4:12b").strip(),
         user_agent=os.environ.get(
             "HORIZONTE_USER_AGENT",
             "Mozilla/5.0 (compatible; HorizonteBot/1.0; leitor RSS de uso pessoal)",

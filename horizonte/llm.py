@@ -48,11 +48,15 @@ def generate_json(hz, prompt: str, system: str, temperature: float = 0.4, timeou
         "prompt": prompt,
         "stream": False,
         "format": "json",
+        "think": False,  # modelos que "pensam" (gemma4, qwen3...) ficam muito mais rápidos sem o raciocínio longo
         "options": {"temperature": temperature, "num_ctx": 8192},
     }
     try:
         with hz.http(timeout=timeout) as client:
             r = client.post(f"{hz.settings.ollama_url}/api/generate", json=payload)
+            if r.status_code == 400 and "think" in r.text.lower():
+                payload.pop("think")  # modelo sem suporte ao parâmetro: tenta de novo sem ele
+                r = client.post(f"{hz.settings.ollama_url}/api/generate", json=payload)
             r.raise_for_status()
             text = r.json().get("response", "")
     except httpx.HTTPError as e:
