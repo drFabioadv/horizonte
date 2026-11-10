@@ -65,7 +65,8 @@ Adapte para as duas redes, em JSON com exatamente estas chaves:
 {{
   "linkedin": {{
     "texto": "post de 900 a 1800 caracteres: abertura forte e sóbria, o que aconteceu, contexto, análise crítica fundamentada e uma reflexão final. Parágrafos curtos. Sem links e sem hashtags no texto (serão acrescentados depois).",
-    "hashtags": ["3 a 5 hashtags pertinentes, sem o símbolo #"]
+    "hashtags": ["3 a 5 hashtags pertinentes, sem o símbolo #"],
+    "poster_frase": "comentário crítico para estampar no pôster: 1 ou 2 frases, até 200 caracteres, sobre a decisão, o direito ou o efeito social; sem números que não estejam nas fontes"
   }},
   "x": {{
     "chamada": "título curto para a central (até 80 caracteres)",
@@ -366,7 +367,8 @@ def produce_story(hz, story_id: int) -> dict:
             hz,
             ADAPT_PROMPT.format(pack=pack, analysis=dumps(analysis)),
             pack, flags,
-            lambda d: "\n".join([str(d.get("linkedin", {}).get("texto", "")), str(d.get("x", {}).get("texto", "")),
+            lambda d: "\n".join([str(d.get("linkedin", {}).get("texto", "")), str(d.get("linkedin", {}).get("poster_frase", "")),
+                                 str(d.get("x", {}).get("texto", "")),
                                  *[str(t) for t in d.get("x", {}).get("thread", []) or []]]),
         )
         if adapted is None:
@@ -414,9 +416,34 @@ def produce_story(hz, story_id: int) -> dict:
         )
         if cur.rowcount:
             created.append(cur.lastrowid)
+    poster_frase = str(li.get("poster_frase") or "").strip()[:260]
+    if poster_frase:
+        analysis["poster_frase"] = poster_frase
     _set_story(hz, story_id, "pronta", "Análise e textos aprovados nas travas factuais.", analysis)
+    if prefs.get("poster_auto", True):
+        attach_poster(hz, story_id, analysis)
     hz.log("info", "editorial", f"Pauta {story_id} pronta: {title}")
     return {"ok": True, "posts": created, "titulo": title}
+
+
+def attach_poster(hz, story_id: int, analysis: dict | None = None, frase: str | None = None) -> dict | None:
+    """Gera o pôster da pauta e anexa ao post do LinkedIn ainda não publicado (substitui imagem anterior)."""
+    from . import poster
+
+    row = hz.db.one("SELECT * FROM posts WHERE story_id=? AND network='linkedin' AND status IN ('agendado','falhou','suspenso')", (story_id,))
+    if not row:
+        return None
+    if analysis is None:
+        st = hz.db.one("SELECT analysis FROM stories WHERE id=?", (story_id,))
+        analysis = loads(st["analysis"], {}) if st else {}
+    try:
+        img = poster.for_post(hz, dict(row), analysis or {}, frase)
+    except Exception as e:  # pôster nunca derruba a produção
+        hz.log("warn", "poster", f"Não foi possível gerar o pôster da pauta {story_id}: {type(e).__name__}: {e}")
+        return None
+    hz.db.execute("UPDATE posts SET image=?, updated_at=? WHERE id=?", (dumps(img), now_iso(), row["id"]))
+    _event(hz, story_id, "poster", "Pôster gerado e anexado ao post do LinkedIn.")
+    return img
 
 
 def produce_pending(hz, day: str | None = None) -> dict:

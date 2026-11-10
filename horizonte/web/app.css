@@ -158,3 +158,8 @@ th{font-family:var(--f-mono);font-weight:500;font-size:11px;letter-spacing:.08em
   .log{grid-template-columns:minmax(0,1fr)}
 }
 @media (prefers-reduced-motion: reduce){ *{transition:none!important} }
+
+.poster{margin:8px 0 10px;max-width:420px}
+.poster img{width:100%;height:auto;display:block;border-radius:10px;border:1px solid rgba(226,178,92,.25)}
+.poster figcaption{font-size:12px;margin-top:4px}
+.post-box textarea{width:100%;min-height:220px}

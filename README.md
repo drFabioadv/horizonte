@@ -131,6 +131,21 @@ O X não tem publicação automática, porque a API dele é paga. Para cada paut
 
 Por padrão, **nenhuma fonte tem imagem liberada**. A Agência Brasil, por exemplo, autoriza reprodução "para veículos de comunicação com fins jornalísticos, mediante indicação da fonte", e uso em redes sociais pode exigir licenciamento. Confira a política de cada fonte antes de mudar para **"Reuso com crédito"** em *Configurações → Fontes*. O HORIZONTE nunca remove créditos e não gera imagens novas.
 
+## 9.1 Pôsteres
+
+Cada post do LinkedIn ganha um **pôster tipográfico** próprio (1080×1350): editoria, data, título,
+um comentário crítico e as fontes, no visual do HORIZONTE. Não usa foto de terceiros, então não há
+problema de direito autoral. Na **Central Editorial** você vê o pôster acima do texto e pode clicar em
+**Refazer pôster** para escrever o seu comentário. O botão **Pôster avulso** gera uma frase sua no mesmo
+visual, para baixar e postar onde quiser. Para desligar, use Configurações → "Gerar pôster automático".
+
+## 9.2 Atualização automática (sem reinstalar)
+
+Igual ao JARVIS: o HORIZONTE procura versão nova no repositório do GitHub (`HORIZONTE_UPDATE_REPO`,
+padrão `drFabioadv/horizonte`) ao abrir e a cada 3 horas. Se houver, baixa, troca só os arquivos do
+programa e reinicia sozinho. Nunca mexe no `.env`, na pasta `data/` (banco, chaves, relatórios) nem no
+`.venv`. No ícone da bandeja: **Procurar atualização agora** e **Reiniciar HORIZONTE**.
+
 ## 10. Solução de problemas
 
 | Sintoma | O que fazer |

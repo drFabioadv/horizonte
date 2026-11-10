@@ -187,7 +187,14 @@ VIEWS.editorial = async (main) => {
   const byDay = {};
   d.itens.forEach((s) => (byDay[s.day] = byDay[s.day] || []).push(s));
   main.innerHTML = `
-    <div class="page-head"><div><h1>Central Editorial</h1><p>Pautas selecionadas, verificação, análise e os textos de cada rede, com o histórico completo.</p></div></div>
+    <div class="page-head"><div><h1>Central Editorial</h1><p>Pautas selecionadas, verificação, análise e os textos de cada rede, com o histórico completo.</p></div>
+      <div class="actions"><button class="btn" id="bLivre">Pôster avulso</button></div></div>
+    <div class="card" id="livreBox" hidden style="margin-bottom:14px"><h2>Pôster avulso</h2>
+      <p class="muted" style="font-size:13px;margin-top:0">Uma frase sua no visual do HORIZONTE, para baixar e postar onde quiser.</p>
+      <div class="form"><div class="field" style="grid-column:1/-1"><label for="lvF">Frase</label><textarea id="lvF" rows="3" placeholder="Eu não sei tudo, mas sei aprender, e isso me torna capaz de tudo."></textarea></div>
+        <div class="field"><label for="lvA">Assinatura (opcional)</label><input type="text" id="lvA" placeholder="Fabio Garcia"></div></div>
+      <div class="actions" style="margin-top:8px"><button class="btn primary" id="lvGo">Gerar pôster</button></div>
+      <div id="lvOut"></div></div>
     <div class="split">
       <div class="card" style="padding:8px">${Object.entries(byDay).map(([day, items]) => `
         <div class="faint mono" style="font-size:11px;letter-spacing:.1em;padding:10px 10px 4px">${new Date(day + "T12:00").toLocaleDateString("pt-BR", { weekday: "short", day: "2-digit", month: "2-digit" }).toUpperCase()}</div>
@@ -197,6 +204,13 @@ VIEWS.editorial = async (main) => {
       </div>
       <div class="card article" id="storyBox"><div class="empty">Escolha uma pauta.</div></div>
     </div>`;
+  $("#bLivre").onclick = () => { const b = $("#livreBox"); b.hidden = !b.hidden; };
+  $("#lvGo").onclick = async () => {
+    const frase = $("#lvF").value.trim();
+    if (!frase) return toast("Escreva a frase do pôster.");
+    const r = await api("/api/poster/livre", { method: "POST", body: { frase, autor: $("#lvA").value.trim() } });
+    $("#lvOut").innerHTML = `<figure class="poster" style="margin-top:12px"><img src="${esc(r.url)}" alt="Pôster"></figure><div class="actions"><a class="btn primary" href="${esc(r.url)}" download="horizonte-poster.png">Baixar pôster</a></div>`;
+  };
   $$(".pick", main).forEach((p) => {
     const open = () => { storySel = Number(p.dataset.id); $$(".pick", main).forEach((x) => x.setAttribute("aria-current", x === p)); renderStory(); };
     p.onclick = open; p.onkeydown = (e) => e.key === "Enter" && open();
@@ -230,12 +244,43 @@ async function renderStory() {
       <section><h4>Reflexão</h4><p>${esc(a.reflexao)}</p></section>
       <section><h4>Cautelas</h4>${list(a.cautelas)}</section>` : '<section><div class="notice">A análise ainda não foi produzida para esta pauta.</div></section>'}
     <section><h4>Fontes do fato (${s.fontes.length})</h4><div class="list">${s.fontes.map((f) => `<div class="row"><a class="t" href="${esc(f.url)}" target="_blank" rel="noopener">${esc(f.title)}</a><div class="meta"><span>${esc(f.fonte)}</span><span class="mono">${fmt(f.published_at)}</span>${f.tier === "primaria" ? '<span class="state ok">fonte primária</span>' : ""}</div></div>`).join("")}</div></section>
-    ${s.posts.map((p) => `<section><h4>${p.network === "linkedin" ? "LinkedIn" : "X"} · ${p.network === "linkedin" ? (LIST[p.status] || [p.status])[0] : (XST[p.status] || [p.status])[0]}</h4><div class="post-text">${esc(p.thread && p.thread.length ? p.thread.join("\n\n— — —\n\n") : p.body)}</div></section>`).join("")}
+    ${s.posts.map((p) => {
+      const li = p.network === "linkedin";
+      const editavel = li && ["agendado", "falhou", "suspenso"].includes(p.status);
+      const img = p.image && p.image.url ? p.image : null;
+      return `<section class="post-box"><h4>${li ? "LinkedIn" : "X"} · ${li ? (LIST[p.status] || [p.status])[0] : (XST[p.status] || [p.status])[0]}${li && p.scheduled_for && p.status === "agendado" ? ` <span class="faint mono" style="font-weight:400">· agendado ${fmt(p.scheduled_for)}</span>` : ""}</h4>
+        ${li && img ? `<figure class="poster"><img src="${esc(img.url)}" alt="Imagem do post"><figcaption class="faint">${esc(img.credito || "")}</figcaption></figure>` : ""}
+        ${editavel ? `<textarea id="etx${p.id}">${esc(p.body)}</textarea>` : `<div class="post-text">${esc(p.thread && p.thread.length ? p.thread.join("\n\n— — —\n\n") : p.body)}</div>`}
+        ${li ? `<div class="actions" style="margin-top:8px">
+          ${editavel ? `<button class="btn primary" data-epub="${p.id}">Publicar agora no LinkedIn</button><button class="btn" data-esave="${p.id}">Salvar edição</button><button class="btn" data-poster="${s.id}">${img && img.poster ? "Refazer pôster" : "Criar pôster"}</button>` : ""}
+          ${p.external_url ? `<a class="btn" href="${esc(p.external_url)}" target="_blank" rel="noopener">Ver no LinkedIn</a>` : ""}
+          ${p.error ? `<div class="notice bad" style="flex-basis:100%">${esc(p.error)}</div>` : ""}
+        </div>` : `<div class="actions" style="margin-top:8px"><a class="btn" href="#x">Abrir na Central do X</a></div>`}
+      </section>`;
+    }).join("")}
     <section><h4>Histórico</h4><ul class="timeline">${s.historico.map((e) => `<li><span class="mono faint">${fmt(e.ts)}</span> · <b>${esc(e.event)}</b>${e.detail ? ` — <span class="muted">${esc(e.detail)}</span>` : ""}</li>`).join("")}</ul></section>`;
   const bS = $("#bSusp");
   if (bS) bS.onclick = async () => { await api(`/api/pautas/${s.id}/suspender`, { method: "POST", body: {} }); toast("Pauta suspensa."); route(); };
   const bP = $("#bProd");
   if (bP) bP.onclick = async () => { const r = await api(`/api/pautas/${s.id}/produzir`, { method: "POST" }); toast(r.ok ? "Produção iniciada." : r.mensagem); };
+  $$("[data-esave]", box).forEach((b) => (b.onclick = async () => { await api(`/api/posts/${b.dataset.esave}/texto`, { method: "PUT", body: { texto: $("#etx" + b.dataset.esave).value } }); toast("Texto salvo."); }));
+  $$("[data-epub]", box).forEach((b) => (b.onclick = async () => {
+    if (!confirm("Publicar este post agora no seu perfil do LinkedIn?")) return;
+    b.disabled = true;
+    try {
+      await api(`/api/posts/${b.dataset.epub}/texto`, { method: "PUT", body: { texto: $("#etx" + b.dataset.epub).value } });
+      const r = await api(`/api/linkedin/posts/${b.dataset.epub}/publicar`, { method: "POST" });
+      toast(r.ok ? "Publicado no LinkedIn." : r.mensagem || "Não foi possível publicar.", 7000);
+    } catch (err) { toast(err.message, 7000); }
+    renderStory();
+  }));
+  $$("[data-poster]", box).forEach((b) => (b.onclick = async () => {
+    const frase = prompt("Comentário para o pôster (deixe em branco para usar o da IA):", "");
+    if (frase === null) return;
+    b.disabled = true; b.textContent = "Gerando…";
+    try { await api(`/api/pautas/${b.dataset.poster}/poster`, { method: "POST", body: { frase } }); toast("Pôster pronto."); } catch (err) { toast(err.message); }
+    renderStory();
+  }));
 }
 
 /* ---------------------------------------------------------------- LinkedIn */
@@ -439,6 +484,7 @@ async function cfgGeral() {
         <div class="field" style="grid-column:1/-1"><label for="s1">Assinatura no fim dos posts do LinkedIn</label><input type="text" id="s1" name="assinatura" value="${esc(p.assinatura)}"></div>
         <label class="switch"><input type="checkbox" name="rodape_ia" ${p.rodape_ia ? "checked" : ""}> Informar no rodapé que o conteúdo teve apoio de IA</label>
         <label class="switch"><input type="checkbox" name="notificacoes_windows" ${p.notificacoes_windows ? "checked" : ""}> Notificações do Windows</label>
+        <label class="switch"><input type="checkbox" name="poster_auto" ${p.poster_auto ? "checked" : ""}> Gerar pôster automático para cada post do LinkedIn</label>
       </div>
       <h2>IA local</h2>
       <div class="form">

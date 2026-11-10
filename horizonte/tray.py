@@ -39,6 +39,12 @@ def main() -> None:
     _quiet_streams(hz.settings.data_dir)
     url = hz.settings.public_url
 
+    if "--reiniciando" in sys.argv:  # reinício após atualização: espera o anterior liberar a porta
+        for _ in range(60):
+            if not _port_busy(hz.settings.host, hz.settings.port):
+                break
+            time.sleep(0.5)
+
     if _port_busy(hz.settings.host, hz.settings.port):
         if _horizonte_alive(hz.settings.port):
             webbrowser.open(url)  # já está aberto: só mostra o painel
@@ -51,9 +57,9 @@ def main() -> None:
     import uvicorn
     from PIL import Image
 
-    from . import notify
+    from . import notify, updater
     from .app import create_app
-    from .pipeline import daily_cycle
+    from .pipeline import _CYCLE_LOCK, daily_cycle
 
     app = create_app(hz)
     state = {"server": None, "quit": False}
@@ -94,15 +100,56 @@ def main() -> None:
             state["server"].should_exit = True
         icon.stop()
 
+    def restart_app(icon=None, item=None):
+        updater.restart()
+        quit_app(icon or state["icon"], item)
+
+    def update_now(icon=None, item=None, manual=True):
+        """Procura versão nova no GitHub; se houver, aplica e reinicia sozinho."""
+        ic = icon or state["icon"]
+        if not _CYCLE_LOCK.acquire(blocking=False):  # nunca atualiza no meio do ciclo
+            if manual:
+                ic.notify("O ciclo do dia está rodando. Tento atualizar quando ele terminar.", "HORIZONTE")
+            return
+        try:
+            res = updater.apply(hz)
+        except Exception as e:  # pragma: no cover - falha de rede/disco
+            res = {"ok": False, "atualizado": False, "mensagem": f"Falha na atualização: {type(e).__name__}"}
+        finally:
+            _CYCLE_LOCK.release()
+        if res.get("atualizado"):
+            ic.notify(res["mensagem"] + " Reiniciando…", "HORIZONTE atualizado")
+            time.sleep(2)
+            restart_app(ic)
+        elif manual:
+            ic.notify(res["mensagem"], "HORIZONTE")
+
+    def update_loop():
+        time.sleep(60)
+        while not state["quit"]:
+            update_now(manual=False)
+            for _ in range(3 * 3600 // 30):  # a cada 3 horas
+                if state["quit"]:
+                    return
+                time.sleep(30)
+
+    def update_click(icon, item):
+        threading.Thread(target=lambda: update_now(icon), daemon=True).start()
+
     menu = pystray.Menu(
         pystray.MenuItem("Abrir painel", open_panel, default=True),
         pystray.MenuItem("Rodar ciclo do dia agora", run_cycle),
         pystray.MenuItem(lambda item: "Retomar operação" if hz.prefs()["pausado"] else "Pausar operação", toggle_pause),
         pystray.Menu.SEPARATOR,
+        pystray.MenuItem("Procurar atualização agora", update_click),
+        pystray.MenuItem("Reiniciar HORIZONTE", restart_app),
         pystray.MenuItem("Sair do HORIZONTE", quit_app),
     )
     icon = pystray.Icon("HORIZONTE", Image.open(ICON), "HORIZONTE — Direito. Política. Sociedade.", menu)
     notify.set_tray(icon)
+    state["icon"] = icon
+    if os.environ.get("HORIZONTE_AUTO_UPDATE", "1") != "0":
+        threading.Thread(target=update_loop, name="horizonte-atualizacao", daemon=True).start()
 
     def ready(icon):
         icon.visible = True

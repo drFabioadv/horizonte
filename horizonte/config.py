@@ -128,4 +128,5 @@ DEFAULT_PREFS: dict = {
     "rodape_ia": False,
     "ollama_modelo": "",
     "notificacoes_windows": True,
+    "poster_auto": True,
 }

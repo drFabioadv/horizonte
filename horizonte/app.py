@@ -333,6 +333,23 @@ def create_app(hz: Horizonte | None = None, start_scheduler: bool = True) -> Fas
         hz.db.execute("UPDATE posts SET image=?, updated_at=? WHERE id=?", (dumps(img), now_iso(), pid))
         return {"ok": True, "imagem": img}
 
+    @app.post("/api/pautas/{sid}/poster")
+    def pauta_poster(sid: int, payload: dict = Body(default={})):
+        img = editorial.attach_poster(hz, sid, frase=str(payload.get("frase") or "")[:300] or None)
+        if not img:
+            raise HTTPException(400, "Esta pauta não tem post do LinkedIn aguardando publicação.")
+        return {"ok": True, "imagem": img}
+
+    @app.post("/api/poster/livre")
+    def poster_livre(payload: dict = Body(...)):
+        from . import poster
+
+        frase = str(payload.get("frase") or "").strip()[:400]
+        if not frase:
+            raise HTTPException(400, "Escreva a frase do pôster.")
+        path = poster.save(hz, poster.render_free(frase, str(payload.get("autor") or "").strip()[:60]), "livre")
+        return {"ok": True, "url": f"/uploads/{path.name}"}
+
     @app.get("/uploads/{name}")
     def uploaded(name: str):
         p = (hz.settings.data_dir / "uploads" / Path(name).name)
