@@ -222,6 +222,8 @@ def build_pack(hz, items: list[dict]) -> str:
 
 _PROPOSAL_AS_LAW = re.compile(r"\b(nova lei|lei aprovada|virou lei|foi sancionad\w*|entra em vigor|passa a valer)\b", re.I)
 _GUILT = re.compile(r"\b(culpad[oa]s?|criminos[oa]s?|corrupt[oa]s?|bandid[oa]s?|ladr(ão|ões|ona)|condenad[oa]s?)\b", re.I)
+# "não foi condenado", "sem ser condenado", "antes de ser condenado": não é afirmar culpa
+_NEGADO = re.compile(r"\b(não|nunca|nem|sem|ninguém|antes de|até ser|até que seja|presunção de|tratad[oa]s? como|como se fosse)\b[^.!?]*$", re.I)
 _CAMPAIGN = re.compile(r"\b(vote em|vote no|vote na|não vote|fora (bolsonaro|lula)|lula lá|mito)\b", re.I)
 
 
@@ -252,7 +254,7 @@ def check_text(text: str, pack: str, flags: list[str], year: int) -> list[str]:
             problems.append(f"A frase entre aspas “{q[:60]}” não está nas notícias. Tire as aspas ou use a fala exata da fonte.")
     if "proposicao" in flags and _PROPOSAL_AS_LAW.search(text) and "sancion" not in fpack:
         problems.append("O texto fala de um projeto (PL, PEC ou MP) como se já fosse lei em vigor. Diga que é proposta ou que ainda tramita.")
-    guilt = _GUILT.search(text)
+    guilt = next((m for m in _GUILT.finditer(text) if not _NEGADO.search(text[max(0, m.start() - 25):m.start()])), None)
     if guilt and "condenad" not in fpack:
         problems.append(f"O texto chama alguém de culpado (“{guilt.group(0)}”) sem condenação nas fontes. "
                         "Troque por “investigado”, “acusado” ou “suspeito”.")

@@ -119,3 +119,10 @@ def test_check_text_rules():
     assert any("culpado" in p for p in editorial.check_text("O criminoso foi preso.", pack, ["acusacao"], 2026))
     assert any("aspas" in p for p in editorial.check_text('Ele disse: "vamos mudar tudo neste país agora".', pack, [], 2026))
     assert any("campanha" in p for p in editorial.check_text("Vote em quem defende isso.", pack, [], 2026))
+
+
+def test_guilt_check_ignores_negations():
+    pack = "O deputado é investigado pela PF."
+    assert editorial.check_text("Ninguém pode ser tratado como culpado antes de ser condenado.", pack, [], 2026) == []
+    assert editorial.check_text("Ele não foi condenado.", pack, [], 2026) == []
+    assert editorial.check_text("O deputado corrupto mentiu.", pack, [], 2026)
