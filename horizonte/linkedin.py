@@ -386,8 +386,9 @@ def publish_post(hz, post_id: int, force: bool = False) -> dict:
         with hz.http(timeout=40) as client:
             urn, url = _create_post(hz, client, tok, post["body"], visibility, loads(post["image"], None),
                                     post["title"] or "")
+            fontes_ok = True
             if "Fontes consultadas:" not in post["body"]:
-                comment(hz, client, tok, urn, sources_comment(loads(post["sources"], [])))
+                fontes_ok = comment(hz, client, tok, urn, sources_comment(loads(post["sources"], [])))
     except LinkedInError as e:
         if e.reconnect:
             tok["invalido"] = True
@@ -418,6 +419,10 @@ def publish_post(hz, post_id: int, force: bool = False) -> dict:
         hz.db.execute("INSERT INTO story_events(story_id, ts, event, detail) VALUES (?,?,?,?)",
                       (post["story_id"], now_iso(), "publicada_linkedin", url))
     hz.log("info", "linkedin", f"Publicado no LinkedIn: {url}")
+    if not fontes_ok:
+        msg = "Publicado, mas o LinkedIn não aceitou o comentário com as fontes. Comente as fontes à mão no post."
+        hz.db.execute("UPDATE posts SET error=? WHERE id=?", (msg, post_id))
+        hz.log("warning", "linkedin", msg)
     return {"ok": True, "url": url, "id": urn}
 
 

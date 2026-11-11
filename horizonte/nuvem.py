@@ -379,8 +379,7 @@ def publish_cloud(fila_path: Path, publicados_path: Path, key: str, now: datetim
         with hz.http() as client:
             urn, url = linkedin._create_post(hz, client, tok, item["texto"], q.get("visibilidade", "PUBLIC"), image,
                                              item.get("titulo", ""))
-            if item.get("comentario"):
-                linkedin.comment(hz, client, tok, urn, item["comentario"])
+            fontes_ok = linkedin.comment(hz, client, tok, urn, item["comentario"]) if item.get("comentario") else True
     except linkedin.LinkedInError as e:
         return done("erro", mensagem=f"Post {item['id']}: {e}", pendentes=pendentes)
     except httpx.HTTPError as e:
@@ -388,7 +387,8 @@ def publish_cloud(fila_path: Path, publicados_path: Path, key: str, now: datetim
         pub["posts"][str(item["id"])] = {"em": now.isoformat(timespec="seconds"), "url": None, "urn": None,
                                          "hash": item["hash"], "verificar": True}
         return done("erro", mensagem=f"Conexão caiu ao publicar o post {item['id']} ({type(e).__name__}). Confira no LinkedIn.")
-    pub["posts"][str(item["id"])] = {"em": now.isoformat(timespec="seconds"), "url": url, "urn": urn, "hash": item["hash"]}
+    pub["posts"][str(item["id"])] = {"em": now.isoformat(timespec="seconds"), "url": url, "urn": urn, "hash": item["hash"],
+                                     **({} if fontes_ok else {"aviso": "O LinkedIn não aceitou o comentário com as fontes."})}
     return done("ok", mensagem=f"Publicado: {item.get('titulo', '')[:80]}", pendentes=pendentes - 1, ultimo=url)
 
 
