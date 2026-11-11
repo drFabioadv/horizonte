@@ -35,6 +35,13 @@ class Horizonte:
         # a assinatura antiga "HORIZONTE — ..." deixava os posts com cara de página; agora o post é do autor
         if self.db.get_pref("assinatura") == "HORIZONTE — Direito. Política. Sociedade.":
             self.db.set_pref("assinatura", "")
+        # engajamento (nov/2026): 2 posts por dia rendem mais que 3 numa rede pequena (uma vez só)
+        if not self.db.get_pref("migr_engajamento"):
+            if self.db.get_pref("linkedin_horarios") == ["08:30", "12:30", "18:30"]:
+                self.db.set_pref("linkedin_horarios", ["08:30", "18:30"])
+            if self.db.get_pref("linkedin_por_dia") == 3:
+                self.db.set_pref("linkedin_por_dia", 2)
+            self.db.set_pref("migr_engajamento", True)
 
     # ---------- preferências ----------
     def prefs(self) -> dict:

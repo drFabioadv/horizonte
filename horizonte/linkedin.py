@@ -25,6 +25,8 @@ USERINFO_URL = "https://api.linkedin.com/v2/userinfo"
 POSTS_URL = "https://api.linkedin.com/rest/posts"
 INTERVALO_MIN = 90  # mínimo entre dois posts automáticos
 IMAGES_URL = "https://api.linkedin.com/rest/images?action=initializeUpload"
+DOCUMENTS_URL = "https://api.linkedin.com/rest/documents?action=initializeUpload"
+COMMENTS_URL = "https://api.linkedin.com/rest/socialActions/{urn}/comments"
 SCOPES = "openid profile w_member_social"
 PROVIDER = "linkedin"
 
@@ -256,6 +258,45 @@ def upload_image(hz, client: httpx.Client, token: str, owner: str, image: dict) 
     return value["image"]
 
 
+def upload_document(hz, client: httpx.Client, token: str, owner: str, path: str) -> str | None:
+    """Envia o carrossel (PDF) e devolve o urn:li:document."""
+    from pathlib import Path
+
+    p = Path(path)
+    if not p.exists():
+        return None
+    r = _rest(hz, client, "POST", DOCUMENTS_URL, token, json={"initializeUploadRequest": {"owner": owner}})
+    _raise_for(r)
+    value = r.json()["value"]
+    up = client.put(value["uploadUrl"], content=p.read_bytes(),
+                    headers={"Authorization": f"Bearer {token}", "Content-Type": "application/pdf"})
+    if up.status_code >= 400:
+        raise LinkedInError(f"Falha ao enviar o carrossel (HTTP {up.status_code}).", up.status_code, retry=up.status_code >= 500)
+    return value["document"]
+
+
+def sources_comment(sources: list[dict]) -> str:
+    if not sources:
+        return ""
+    return "Fontes consultadas:\n" + "\n".join(f"• {s.get('veiculo')}: {s.get('url')}" for s in sources if s.get("url"))
+
+
+def comment(hz, client: httpx.Client, tok: dict, post_urn: str, text: str) -> bool:
+    """Primeiro comentário (com as fontes). Nunca derruba a publicação se falhar."""
+    from urllib.parse import quote
+
+    if not text:
+        return False
+    author = f"urn:li:person:{tok['sub']}"
+    try:
+        r = _rest(hz, client, "POST", COMMENTS_URL.format(urn=quote(post_urn, safe="")), tok["access_token"],
+                  json={"actor": author, "object": post_urn, "message": {"text": text}},
+                  headers={"Content-Type": "application/json"})
+        return r.status_code < 300
+    except httpx.HTTPError:
+        return False
+
+
 # ---------------------------------------------------------------- publicação
 
 
@@ -270,12 +311,32 @@ def _create_post(hz, client: httpx.Client, tok: dict, text: str, visibility: str
         "lifecycleState": "PUBLISHED",
         "isReshareDisabledByAuthor": False,
     }
-    if image and image.get("autorizada"):
-        urn = upload_image(hz, client, tok["access_token"], author, image)
-        if urn:
-            body["content"] = {"media": {"id": urn, "altText": alt[:120]}}
-    r = _rest(hz, client, "POST", POSTS_URL, tok["access_token"], json=body,
-              headers={"Content-Type": "application/json"})
+    doc = (image or {}).get("documento") or {}
+    r = None
+    if doc.get("arquivo"):
+        try:  # carrossel (documento) rende mais alcance; se o LinkedIn recusar, cai no pôster
+            durn = upload_document(hz, client, tok["access_token"], author, doc["arquivo"])
+            if durn:
+                body["content"] = {"media": {"id": durn, "title": (doc.get("titulo") or alt or "Análise")[:200]}}
+                r = _rest(hz, client, "POST", POSTS_URL, tok["access_token"], json=body,
+                          headers={"Content-Type": "application/json"})
+                if r.status_code >= 400 and r.status_code not in (401, 403, 429):
+                    hz.log("warning", "linkedin", f"Carrossel recusado (HTTP {r.status_code}); publicando com o pôster.")
+                    r = None
+        except LinkedInError as e:
+            if e.reconnect or e.status in (401, 403, 429):
+                raise
+            hz.log("warning", "linkedin", f"Carrossel não enviado ({e}); publicando com o pôster.")
+            r = None
+        if r is None:
+            body.pop("content", None)
+    if r is None:
+        if image and image.get("autorizada"):
+            urn = upload_image(hz, client, tok["access_token"], author, image)
+            if urn:
+                body["content"] = {"media": {"id": urn, "altText": alt[:120]}}
+        r = _rest(hz, client, "POST", POSTS_URL, tok["access_token"], json=body,
+                  headers={"Content-Type": "application/json"})
     _raise_for(r)
     post_urn = r.headers.get("x-restli-id") or r.headers.get("x-linkedin-id") or ""
     if not post_urn:
@@ -325,6 +386,8 @@ def publish_post(hz, post_id: int, force: bool = False) -> dict:
         with hz.http(timeout=40) as client:
             urn, url = _create_post(hz, client, tok, post["body"], visibility, loads(post["image"], None),
                                     post["title"] or "")
+            if "Fontes consultadas:" not in post["body"]:
+                comment(hz, client, tok, urn, sources_comment(loads(post["sources"], [])))
     except LinkedInError as e:
         if e.reconnect:
             tok["invalido"] = True

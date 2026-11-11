@@ -128,3 +128,26 @@ def test_app_window_command(tmp_path):
     assert cmd[0] == "msedge.exe" and cmd[1] == "--app=http://localhost:8788/entrar?c=x"
     assert any(c.startswith("--user-data-dir=") and "janela" in c for c in cmd)
     assert (tmp_path / "janela").is_dir()
+
+
+def test_carousel_and_sources_comment(hz, world):
+    """Formato carrossel: PDF de várias páginas; fontes no 1º comentário; cai no pôster se o LinkedIn recusar."""
+    from horizonte import linkedin
+    from horizonte.pipeline import daily_cycle
+
+    hz.set_prefs({"formato_linkedin": "carrossel"})
+    connect_linkedin(hz)
+    daily_cycle(hz)
+    post = hz.db.one("SELECT * FROM posts WHERE network='linkedin' AND status='agendado'")
+    img = json.loads(post["image"])
+    doc = img["documento"]
+    assert doc["paginas"] >= 3 and open(doc["arquivo"], "rb").read(4) == b"%PDF"
+    assert linkedin.publish_post(hz, post["id"], force=True)["ok"]
+    assert world.posts_created[-1]["content"]["media"]["id"] == "urn:li:document:DOC1"
+    c = world.comments[-1]
+    assert c["object"].startswith("urn:li:share:") and "Fontes consultadas" in c["message"]["text"] and "http" in c["message"]["text"]
+    # LinkedIn recusa o documento: publica com o pôster
+    world.documents_fail = True
+    other = hz.db.one("SELECT id FROM posts WHERE network='linkedin' AND status='agendado'")
+    assert linkedin.publish_post(hz, other["id"], force=True)["ok"]
+    assert world.posts_created[-1]["content"]["media"]["id"] == "urn:li:image:IMG1"

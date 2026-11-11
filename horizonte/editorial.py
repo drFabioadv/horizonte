@@ -34,7 +34,8 @@ COMO ELE ESCREVE
 - Enfrenta o melhor argumento contrário e responde a ele. Opinião forte não é opinião rasa.
 - Linguagem natural de quem fala bem: frases curtas e médias, verbos fortes, uma ou outra frase de efeito, exemplos concretos.
   Pode usar "eu", "penso", "me parece", "o problema é".
-- Termina com uma conclusão firme ou uma provocação concreta, não com pergunta genérica.
+- Termina com uma conclusão firme e, na última linha, uma pergunta concreta ao leitor, que dê vontade de comentar
+  (ex.: "O CNJ deveria poder afastar juiz por liminar?"). Nunca pergunta genérica como "o que você acha?".
 
 PROIBIDO (deixa o texto com cara de máquina)
 - Clichês: "em um cenário", "nesse contexto", "é fundamental", "é importante destacar", "vale ressaltar", "diante disso",
@@ -79,7 +80,7 @@ ANÁLISE APROVADA:
 Escreva os textos dele para as duas redes, em JSON com exatamente estas chaves:
 {{
   "linkedin": {{
-    "texto": "post de 900 a 1600 caracteres, em primeira pessoa. 1ª linha: a tese, curta e forte (é o que aparece antes do 'ver mais'). Depois: o fato em 1 ou 2 frases, os argumentos dele, o contra-argumento e a resposta, e um fecho firme. Parágrafos de 1 a 3 frases. Sem links e sem hashtags no texto.",
+    "texto": "post de 900 a 1600 caracteres, em primeira pessoa. 1ª linha: a tese, curta e forte (é o que aparece antes do 'ver mais'). Depois: o fato em 1 ou 2 frases, os argumentos dele, o contra-argumento e a resposta, um fecho firme e, na última linha, uma pergunta concreta ao leitor. Parágrafos de 1 a 3 frases. Sem links e sem hashtags no texto.",
     "hashtags": ["3 a 5 hashtags pertinentes, sem o símbolo #"],
     "poster_frase": "a frase do pôster: a opinião dele numa frase de impacto, citável, até 150 caracteres, sem números"
   }},
@@ -357,8 +358,11 @@ def _sources_list(items: list[dict]) -> list[dict]:
 
 def compose_linkedin(text: str, sources: list[dict], tags: list[str], prefs: dict) -> str:
     body = text.strip()
-    src = "\n".join(f"• {s['veiculo']}: {s['url']}" for s in sources)
-    out = f"{body}\n\nFontes consultadas:\n{src}"
+    if prefs.get("fontes_no_comentario", True):
+        out = body  # links no texto derrubam o alcance: as fontes vão no 1º comentário
+    else:
+        src = "\n".join(f"• {s['veiculo']}: {s['url']}" for s in sources)
+        out = f"{body}\n\nFontes consultadas:\n{src}"
     if tags:
         out += "\n\n" + " ".join("#" + t for t in tags)
     if prefs.get("assinatura"):
@@ -443,7 +447,7 @@ def produce_story(hz, story_id: int) -> dict:
             "status, scheduled_for, error, content_hash, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
             (story_id, "linkedin", "post", title, li_body, dumps(li_tags), dumps(sources),
              dumps(image if image and image.get("autorizada") else None), story["category"], news_date, li_status,
-             next_linkedin_slot(hz, story["day"]), aviso, content_hash("linkedin", li_body), now, now),
+             next_linkedin_slot(hz, story["day"]), aviso, content_hash("linkedin", li_body + "|" + "|".join(s["url"] for s in sources)), now, now),
         )
         if cur.rowcount:
             created.append(cur.lastrowid)

@@ -72,7 +72,7 @@ def test_queue_roundtrip_publish_and_sync(hz, world, monkeypatch, tmp_path):
 
     gh, handler = _setup(hz, world, monkeypatch)
     connect_linkedin(hz)
-    hz.set_prefs({"linkedin_auto": True})
+    hz.set_prefs({"linkedin_auto": True, "formato_linkedin": "carrossel"})
     daily_cycle(hz)  # produz e já envia a fila
     assert "nuvem" in gh.branches and nuvem.SECRET_NAME in gh.secrets and "fila.enc" in gh.files
     assert b"TOKEN-SECRETO" not in gh.files["fila.enc"]  # criptografado
@@ -89,7 +89,8 @@ def test_queue_roundtrip_publish_and_sync(hz, world, monkeypatch, tmp_path):
     now = datetime.now(timezone.utc)
     st = nuvem.publish_cloud(pasta / "fila.enc", pasta / "publicados.json", key, now=now, transport=httpx.MockTransport(handler))
     assert st["situacao"] == "ok" and st["ultimo"].startswith("https://www.linkedin.com/feed/update/")
-    assert len(world.posts_created) == 1 and world.posts_created[0]["content"]["media"]["id"] == "urn:li:image:IMG1"
+    assert len(world.posts_created) == 1 and world.posts_created[0]["content"]["media"]["id"] == "urn:li:document:DOC1"
+    assert world.comments and "Fontes consultadas" in world.comments[-1]["message"]["text"]
     # logo depois: respeita o intervalo
     st = nuvem.publish_cloud(pasta / "fila.enc", pasta / "publicados.json", key, now=now + timedelta(minutes=10),
                              transport=httpx.MockTransport(handler))

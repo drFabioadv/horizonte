@@ -233,6 +233,90 @@ def image_entry(path: Path, observacao: str, credito: str = "Arte própria") -> 
     }
 
 
+def _page(texto: str, rotulo: str, n: int, total: int, autor: dict, categoria: str | None,
+          rodape: str = "") -> Image.Image:
+    """Uma página do carrossel: rótulo da seção, texto grande e assinatura."""
+    tema = TEMAS[autor.get("tema") or "claro"]
+    acento = (ACENTO_ESCURO if autor.get("tema") == "escuro" else ACENTO).get(categoria, ACENTO[None])
+    img = Image.new("RGB", (W, H), tema["bg"])
+    d = ImageDraw.Draw(img)
+    width = W - 2 * M
+    d.rectangle([0, 0, W, 14], fill=acento)
+    fl = _font("Poppins-Bold.ttf", 24)
+    d.text((M, 92), rotulo.upper(), font=fl, fill=acento)
+    num = f"{n}/{total}"
+    fn = _font("Poppins-Regular.ttf", 24)
+    d.text((W - M - d.textlength(num, font=fn), 92), num, font=fn, fill=tema["muted"])
+    d.line([(M, 142), (W - M, 142)], fill=tema["line"], width=2)
+    sig_top = H - 200
+    top, bottom = 200, sig_top - 60 - (90 if rodape else 0)
+    for size in range(54, 30, -2):
+        lh = int(size * 1.38)
+        f, lines = _fit(d, texto, "Lora-Variable.ttf", range(size, size - 1, -1), width, max(3, (bottom - top) // lh), weight=480)
+        if not lines[-1].endswith("…"):
+            break
+    lh = int(f.size * 1.38)
+    y = top + max(0, (bottom - top - lh * len(lines)) // 2 - 30)
+    for line in lines:
+        d.text((M, y), line, font=f, fill=tema["ink"])
+        y += lh
+    if rodape:
+        fr = _font("Poppins-Medium.ttf", 30)
+        y = max(y + 40, bottom - 10)
+        d.line([(M, y), (M + 90, y)], fill=acento, width=5)
+        d.text((M, y + 24), rodape, font=fr, fill=acento)
+    d.line([(M, sig_top - 34), (W - M, sig_top - 34)], fill=tema["line"], width=2)
+    _signature(img, autor, acento, tema, sig_top)
+    if n < total:
+        fs = _font("Poppins-Regular.ttf", 22)
+        x_end, y_mid = W - M, sig_top + 44
+        d.line([(x_end - 34, y_mid), (x_end, y_mid)], fill=tema["muted"], width=2)  # seta desenhada (a fonte não tem →)
+        d.line([(x_end - 10, y_mid - 8), (x_end, y_mid), (x_end - 10, y_mid + 8)], fill=tema["muted"], width=2)
+        d.text((x_end - 46 - d.textlength("arraste", font=fs), sig_top + 30), "arraste", font=fs, fill=tema["muted"])
+    return img
+
+
+def _split(text: str, limite: int = 420) -> list[str]:
+    """Divide um texto longo em partes por frases, para caber em páginas."""
+    frases = re.split(r"(?<=[.!?])\s+", str(text).strip())
+    partes, cur = [], ""
+    for f in frases:
+        if cur and len(cur) + len(f) + 1 > limite:
+            partes.append(cur)
+            cur = f
+        else:
+            cur = f"{cur} {f}".strip()
+    if cur:
+        partes.append(cur)
+    return partes
+
+
+def render_carousel(capa: Image.Image, analysis: dict, categoria: str | None, autor: dict) -> list[Image.Image]:
+    """Capa (o pôster) + o fato + por que importa + a argumentação + a conclusão com chamada para comentar."""
+    blocos: list[tuple[str, str]] = []
+    if analysis.get("o_que_aconteceu"):
+        blocos.append(("O que aconteceu", analysis["o_que_aconteceu"]))
+    if analysis.get("relevancia"):
+        blocos.append(("Por que importa", analysis["relevancia"]))
+    for i, parte in enumerate(_split(analysis.get("analise_critica") or "")[:3]):
+        blocos.append(("Minha leitura" if i == 0 else "Minha leitura (cont.)", parte))
+    fim = analysis.get("reflexao") or analysis.get("tese") or ""
+    total = 1 + len(blocos) + (1 if fim else 0)
+    pages = [capa]
+    for i, (rot, txt) in enumerate(blocos, start=2):
+        pages.append(_page(txt, rot, i, total, autor, categoria))
+    if fim:
+        pages.append(_page(fim, "Conclusão", total, total, autor, categoria, rodape="Concorda? Comente e siga para mais."))
+    return pages
+
+
+def save_pdf(hz, pages: list[Image.Image], nome: str) -> Path:
+    path = hz.settings.data_dir / "uploads" / f"{nome}-{int(time.time())}.pdf"
+    rgb = [p.convert("RGB") for p in pages]
+    rgb[0].save(path, "PDF", save_all=True, append_images=rgb[1:], resolution=144)
+    return path
+
+
 def for_post(hz, post: dict, analysis: dict, frase: str | None = None) -> dict:
     """Gera o pôster de um post (LinkedIn) e devolve o registro de imagem pronto para anexar."""
     from .db import loads
@@ -243,5 +327,12 @@ def for_post(hz, post: dict, analysis: dict, frase: str | None = None) -> dict:
     img = render_news(analysis.get("titulo") or post.get("title") or "", frase, post.get("category"),
                       [f for f in fontes if f], post.get("news_date"), autor)
     path = save(hz, img, f"poster-{post['id']}")
-    return image_entry(path, "Pôster de opinião com a sua assinatura (sem foto de terceiros).",
-                       f"Arte: {autor['nome']}" if autor["nome"] else "Arte própria")
+    entry = image_entry(path, "Pôster de opinião com a sua assinatura (sem foto de terceiros).",
+                        f"Arte: {autor['nome']}" if autor["nome"] else "Arte própria")
+    if hz.prefs().get("formato_linkedin", "carrossel") == "carrossel":
+        pages = render_carousel(img, analysis, post.get("category"), autor)
+        if len(pages) >= 3:
+            pdf = save_pdf(hz, pages, f"carrossel-{post['id']}")
+            entry["documento"] = {"arquivo": str(pdf), "url": f"/uploads/{pdf.name}", "paginas": len(pages),
+                                  "titulo": (analysis.get("titulo") or post.get("title") or "Análise")[:200]}
+    return entry

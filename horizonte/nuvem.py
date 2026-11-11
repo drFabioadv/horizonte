@@ -213,8 +213,14 @@ def build_queue(hz) -> dict:
         if img and img.get("autorizada") and img.get("arquivo") and Path(img["arquivo"]).exists():
             path = Path(img["arquivo"])
             image = {"nome": path.name, "b64": base64.b64encode(path.read_bytes()).decode()}
+        doc = (img or {}).get("documento") or {}
+        documento = None
+        if doc.get("arquivo") and Path(doc["arquivo"]).exists():
+            documento = {"nome": Path(doc["arquivo"]).name, "titulo": doc.get("titulo") or "",
+                         "b64": base64.b64encode(Path(doc["arquivo"]).read_bytes()).decode()}
+        comentario = "" if "Fontes consultadas:" in p["body"] else linkedin.sources_comment(loads(p["sources"], []))
         items.append({"id": p["id"], "quando": p["scheduled_for"], "titulo": p["title"] or "", "texto": p["body"],
-                      "hash": p["content_hash"], "imagem": image})
+                      "hash": p["content_hash"], "imagem": image, "documento": documento, "comentario": comentario})
     return {
         "gerado_em": _utcnow().isoformat(timespec="seconds"),
         "token": {k: tok[k] for k in ("access_token", "sub", "scopes", "expires_at")} if tok else None,
@@ -353,6 +359,9 @@ def publish_cloud(fila_path: Path, publicados_path: Path, key: str, now: datetim
             self.settings = type("S", (), {"linkedin_version": q.get("versao_api", "")})()
             self.db = type("D", (), {"set_pref": lambda *_: None, "get_pref": lambda *_: None})()
 
+        def log(self, level, area, msg):
+            print(f"[{area}] {msg}")
+
         def http(self, timeout: float = 40, **kw):
             return httpx.Client(timeout=timeout, transport=transport, follow_redirects=True, **kw)
 
@@ -362,10 +371,16 @@ def publish_cloud(fila_path: Path, publicados_path: Path, key: str, now: datetim
         tmp = Path(tempfile.mkdtemp()) / item["imagem"]["nome"]
         tmp.write_bytes(base64.b64decode(item["imagem"]["b64"]))
         image = {"arquivo": str(tmp), "autorizada": True}
+    if item.get("documento"):
+        dtmp = Path(tempfile.mkdtemp()) / item["documento"]["nome"]
+        dtmp.write_bytes(base64.b64decode(item["documento"]["b64"]))
+        image = {**(image or {}), "documento": {"arquivo": str(dtmp), "titulo": item["documento"].get("titulo")}}
     try:
         with hz.http() as client:
             urn, url = linkedin._create_post(hz, client, tok, item["texto"], q.get("visibilidade", "PUBLIC"), image,
                                              item.get("titulo", ""))
+            if item.get("comentario"):
+                linkedin.comment(hz, client, tok, urn, item["comentario"])
     except linkedin.LinkedInError as e:
         return done("erro", mensagem=f"Post {item['id']}: {e}", pendentes=pendentes)
     except httpx.HTTPError as e:

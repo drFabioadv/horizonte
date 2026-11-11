@@ -259,7 +259,7 @@ async function renderStory() {
       const editavel = li && ["agendado", "falhou", "suspenso"].includes(p.status);
       const img = p.image && p.image.url ? p.image : null;
       return `<section class="post-box"><h4>${li ? "LinkedIn" : "X"} · ${li ? (LIST[p.status] || [p.status])[0] : (XST[p.status] || [p.status])[0]}${li && p.scheduled_for && p.status === "agendado" ? ` <span class="faint mono" style="font-weight:400">· agendado ${fmt(p.scheduled_for)}</span>` : ""}</h4>
-        ${li && img ? `<figure class="poster"><img src="${esc(img.url)}" alt="Imagem do post"><figcaption class="faint">${esc(img.credito || "")}</figcaption></figure>` : ""}
+        ${li && img ? `<figure class="poster"><img src="${esc(img.url)}" alt="Imagem do post"><figcaption class="faint">${esc(img.credito || "")}${img.documento ? ` · <a href="${esc(img.documento.url)}" target="_blank" rel="noopener">ver o carrossel (${img.documento.paginas} páginas)</a>` : ""}</figcaption></figure>` : ""}
         ${editavel ? `<textarea id="etx${p.id}">${esc(p.body)}</textarea>` : `<div class="post-text">${esc(p.thread && p.thread.length ? p.thread.join("\n\n— — —\n\n") : p.body)}</div>`}
         ${li ? `<div class="actions" style="margin-top:8px">
           ${editavel && p.status !== "suspenso" ? `<button class="btn primary" data-epub="${p.id}">Publicar agora no LinkedIn</button>` : ""}
@@ -548,6 +548,8 @@ async function cfgGeral() {
         <div class="field"><label for="a1">Seu nome (assina os pôsteres e orienta a voz dos textos)</label><input type="text" id="a1" name="autor_nome" value="${esc(p.autor_nome)}"></div>
         <div class="field"><label for="a2">Linha abaixo do nome no pôster</label><input type="text" id="a2" name="autor_titulo" value="${esc(p.autor_titulo)}"></div>
         <div class="field" style="grid-column:1/-1"><label for="a3">Quem é você (a IA escreve com essa voz)</label><input type="text" id="a3" name="autor_perfil" value="${esc(p.autor_perfil)}"></div>
+        <div class="field"><label for="a5">Formato dos posts do LinkedIn</label><select id="a5" name="formato_linkedin"><option value="carrossel" ${p.formato_linkedin === "carrossel" ? "selected" : ""}>Carrossel (mais alcance)</option><option value="poster" ${p.formato_linkedin === "poster" ? "selected" : ""}>Só o pôster</option></select></div>
+        <label class="switch"><input type="checkbox" name="fontes_no_comentario" ${p.fontes_no_comentario ? "checked" : ""}> Fontes no 1º comentário (link no texto reduz o alcance)</label>
         <div class="field"><label for="a4">Fundo dos pôsteres</label><select id="a4" name="poster_tema"><option value="claro" ${p.poster_tema === "claro" ? "selected" : ""}>Claro (papel)</option><option value="escuro" ${p.poster_tema === "escuro" ? "selected" : ""}>Escuro</option></select></div>
         <div class="field" style="grid-column:1/-1"><label for="s1">Frase no fim dos posts do LinkedIn (opcional)</label><input type="text" id="s1" name="assinatura" value="${esc(p.assinatura)}"></div>
         <label class="switch"><input type="checkbox" name="rodape_ia" ${p.rodape_ia ? "checked" : ""}> Informar no rodapé que o conteúdo teve apoio de IA</label>

@@ -87,6 +87,7 @@ class FakeWorld:
         self.linkedin_mode = "ok"  # ok | 401 | 429 | 426_once | 500
         self.version_seen: list[str] = []
         self.posts_created: list[dict] = []
+        self.comments: list[dict] = []
         self._426_done = False
 
     # ------------------------------------------------------------ IA simulada
@@ -146,6 +147,14 @@ class FakeWorld:
             if request.url.path == "/rest/images":
                 return httpx.Response(200, json={"value": {"uploadUrl": "https://upload.linkedin.test/up/1",
                                                            "image": "urn:li:image:IMG1"}})
+            if request.url.path == "/rest/documents":
+                if getattr(self, "documents_fail", False):
+                    return httpx.Response(400, json={"message": "documento recusado"})
+                return httpx.Response(200, json={"value": {"uploadUrl": "https://upload.linkedin.test/doc/1",
+                                                           "document": "urn:li:document:DOC1"}})
+            if request.url.path.startswith("/rest/socialActions/"):
+                self.comments.append(json.loads(request.content))
+                return httpx.Response(201, json={})
             if request.url.path == "/rest/posts":
                 body = json.loads(request.content)
                 self.posts_created.append(body)
@@ -175,6 +184,8 @@ def hz(tmp_path, world, monkeypatch):
     from horizonte.core import Horizonte
 
     h = Horizonte(load_settings(), transport=httpx.MockTransport(world.handler))
+    # os testes antigos usam 3 posts/dia e pôster simples; o carrossel tem teste próprio
+    h.set_prefs({"linkedin_por_dia": 3, "linkedin_horarios": ["08:30", "12:30", "18:30"], "formato_linkedin": "poster"})
     with h.db.tx() as conn:
         conn.execute("DELETE FROM sources")
         for s in TEST_SOURCES:
