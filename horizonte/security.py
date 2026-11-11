@@ -13,6 +13,7 @@ _SECRET_PATTERNS = [
     re.compile(r"(client_secret[\"'=:\s]+)[A-Za-z0-9\-\._~\+/=]{4,}", re.I),
     re.compile(r"(refresh_token[\"'=:\s]+)[A-Za-z0-9\-\._~\+/=]{8,}", re.I),
     re.compile(r"([?&]code=)[A-Za-z0-9\-\._~]{8,}", re.I),
+    re.compile(r"(github_pat_|ghp_)[A-Za-z0-9_]{8,}"),
 ]
 
 

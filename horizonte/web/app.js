@@ -348,7 +348,8 @@ VIEWS.linkedin = async (main) => {
     </div>
     <div class="card" style="margin-bottom:14px"><h2>Nuvem</h2>
       ${(() => { const n = d.nuvem || {}; const sn = n.status_nuvem || {};
-        if (!n.configurado) return `<p class="muted" style="font-size:13px;margin:0">Desligada. Para publicar com o PC desligado, coloque o <code>HORIZONTE_GITHUB_TOKEN</code> no arquivo .env e reinicie.</p>`;
+        if (!n.configurado) return `<p class="muted" style="font-size:13px;margin:0 0 8px">Desligada. Para publicar nos horários com o PC desligado, cole aqui o token do GitHub (começa com <code>github_pat_</code>). Ele fica guardado criptografado neste computador.</p>
+          <div class="actions"><input type="password" id="ghTok" placeholder="github_pat_…" autocomplete="off" style="flex:1;min-width:260px"><button class="btn primary" id="bGh">Ligar a nuvem</button></div>`;
         return `<p style="margin:0 0 8px">${n.ativa ? '<span class="state ok">Ativa</span> quem publica nos horários é a nuvem do GitHub' : '<span class="state warn">Em espera</span> ligue o modo automático para a nuvem publicar'}</p>
         <table><tbody>
           <tr><th>Fila enviada</th><td>${n.enviado_em ? fmt(n.enviado_em) + ` · ${n.itens ?? 0} post(s)` : "—"}</td></tr>
@@ -357,7 +358,7 @@ VIEWS.linkedin = async (main) => {
         </tbody></table>
         ${n.erro ? `<div class="notice bad" style="margin-top:8px">${esc(n.erro)}</div>` : ""}
         ${sn.situacao === "erro" ? `<div class="notice bad" style="margin-top:8px">${esc(sn.mensagem)}</div>` : ""}
-        <div class="actions" style="margin-top:10px"><button class="btn" id="bNuvem">Enviar fila agora</button><a class="btn" href="${esc(n.acoes_url)}" target="_blank" rel="noopener">Ver execuções no GitHub</a></div>`; })()}
+        <div class="actions" style="margin-top:10px"><button class="btn" id="bNuvem">Enviar fila agora</button><button class="btn" id="bNuvemT">Testar a nuvem agora</button><a class="btn" href="${esc(n.acoes_url)}" target="_blank" rel="noopener">Ver execuções no GitHub</a></div>`; })()}
     </div>
     <div class="card"><h2>Publicações</h2><div class="list">${d.posts.map((p) => `
       <div class="row">
@@ -375,6 +376,17 @@ VIEWS.linkedin = async (main) => {
             ${["agendado", "falhou", "suspenso"].includes(p.status) ? `<label class="btn small" style="cursor:pointer">Anexar imagem sua<input type="file" accept="image/jpeg,image/png,image/gif" data-up="${p.id}" hidden></label>` : ""}
           </div></details>
       </div>`).join("") || '<div class="empty">Nenhuma publicação ainda.</div>'}</div></div>`;
+  const bg = $("#bGh");
+  if (bg) bg.onclick = async () => {
+    const t = $("#ghTok").value.trim();
+    if (!t) return toast("Cole o token do GitHub.");
+    bg.disabled = true; bg.textContent = "Conferindo…";
+    const r = await api("/api/nuvem/token", { method: "POST", body: { token: t } });
+    toast(r.ok ? "Nuvem ligada: fila enviada para o GitHub." : r.mensagem, 9000);
+    route();
+  };
+  const bt = $("#bNuvemT");
+  if (bt) bt.onclick = async () => { bt.disabled = true; const r = await api("/api/nuvem/testar", { method: "POST" }); toast(r.mensagem, 9000); };
   const bn = $("#bNuvem");
   if (bn) bn.onclick = async () => { bn.disabled = true; const r = await api("/api/nuvem/sincronizar", { method: "POST" }); toast(r.ok ? "Fila enviada para a nuvem." : r.mensagem, 6000); route(); };
   const auto = $("#auto");

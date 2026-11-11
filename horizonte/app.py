@@ -387,6 +387,14 @@ def create_app(hz: Horizonte | None = None, start_scheduler: bool = True) -> Fas
     def nuvem_status():
         return nuvem.status(hz)
 
+    @app.post("/api/nuvem/token")
+    def nuvem_token(payload: dict = Body(...)):
+        return nuvem.save_token(hz, str(payload.get("token") or ""))
+
+    @app.post("/api/nuvem/testar")
+    def nuvem_testar():
+        return nuvem.dispatch(hz)
+
     @app.post("/api/nuvem/sincronizar")
     def nuvem_sync():
         return nuvem.sync(hz, force_push=True)

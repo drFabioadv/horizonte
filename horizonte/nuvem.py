@@ -43,8 +43,60 @@ def _parse(iso: str) -> datetime:
 
 
 # ============================================================== lado do PC
-def gh_token() -> str:
+_HZ = {"ref": None}  # contexto do HORIZONTE (para ler o token guardado no cofre)
+
+
+def gh_token(hz=None) -> str:
+    """Token do GitHub: o colado no painel (guardado criptografado) ou o do .env."""
+    hz = hz or _HZ["ref"]
+    if hz is not None:
+        row = hz.db.one("SELECT data FROM tokens WHERE provider='github'")
+        data = hz.vault.decrypt(row["data"]) if row else None
+        if data and data.get("token"):
+            return data["token"]
     return os.environ.get("HORIZONTE_GITHUB_TOKEN", "").strip()
+
+
+def save_token(hz, token: str) -> dict:
+    """Confere o token colado no painel e guarda criptografado. Já envia a fila se der certo."""
+    from .db import now_iso
+
+    token = token.strip()
+    if not token.startswith(("github_pat_", "ghp_")):
+        return {"ok": False, "mensagem": "Isso não parece um token do GitHub (ele começa com github_pat_)."}
+    try:
+        with hz.http(timeout=20, headers={"Authorization": f"Bearer {token}", "Accept": "application/vnd.github+json"}) as c:
+            r = c.get(f"{API}/repos/{repo()}")
+            if r.status_code != 200:
+                return {"ok": False, "mensagem": f"O GitHub recusou o token para o repositório {repo()} (HTTP {r.status_code}). "
+                                                  "Confira se escolheu o repositório horizonte ao criar o token."}
+            if not (r.json().get("permissions") or {}).get("push", True):
+                return {"ok": False, "mensagem": "O token não tem permissão de escrita (Contents: Read and write)."}
+            r = c.get(f"{API}/repos/{repo()}/actions/secrets/public-key")
+            if r.status_code != 200:
+                return {"ok": False, "mensagem": "O token não tem a permissão Secrets (Read and write). Crie de novo marcando essa permissão."}
+    except httpx.HTTPError as e:
+        return {"ok": False, "mensagem": f"Sem conexão com o GitHub ({type(e).__name__})."}
+    hz.db.execute("INSERT INTO tokens(provider, data, updated_at) VALUES ('github',?,?) "
+                  "ON CONFLICT(provider) DO UPDATE SET data=excluded.data, updated_at=excluded.updated_at",
+                  (hz.vault.encrypt({"token": token}), now_iso()))
+    _set_state(hz, segredo=None)  # regrava o segredo da fila com o token novo
+    hz.log("info", "nuvem", "Token do GitHub conferido e guardado (criptografado).")
+    res = sync(hz, force_push=True)
+    return {"ok": res.get("ok", False), "mensagem": res.get("mensagem") or "Nuvem ligada.", **res}
+
+
+def dispatch(hz) -> dict:
+    """Pede ao GitHub para rodar o publicador agora (teste). Precisa da permissão Actions: Read and write."""
+    try:
+        with _gh(hz) as c:
+            r = c.post(f"{API}/repos/{repo()}/actions/workflows/publicar-linkedin.yml/dispatches", json={"ref": "main"})
+    except httpx.HTTPError as e:
+        return {"ok": False, "mensagem": f"Sem conexão com o GitHub ({type(e).__name__})."}
+    if r.status_code == 204:
+        return {"ok": True, "mensagem": "Pedido enviado. Em 1 ou 2 minutos a execução aparece no GitHub."}
+    return {"ok": False, "mensagem": f"O GitHub não deixou rodar agora (HTTP {r.status_code}). "
+                                      "Falta a permissão Actions: Read and write no token, mas a nuvem roda sozinha a cada 15 min."}
 
 
 def repo() -> str:
@@ -52,7 +104,8 @@ def repo() -> str:
 
 
 def configured(hz) -> bool:
-    return bool(gh_token() and repo())
+    _HZ["ref"] = hz
+    return bool(gh_token(hz) and repo())
 
 
 def active(hz) -> bool:
@@ -68,7 +121,7 @@ def _key(hz) -> bytes:
 
 
 def _gh(hz, timeout: float = 30):
-    return hz.http(timeout=timeout, headers={"Authorization": f"Bearer {gh_token()}",
+    return hz.http(timeout=timeout, headers={"Authorization": f"Bearer {gh_token(hz)}",
                                              "Accept": "application/vnd.github+json",
                                              "X-GitHub-Api-Version": "2022-11-28"})
 

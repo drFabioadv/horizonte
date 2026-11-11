@@ -19,7 +19,11 @@ class FakeGitHub:
     def handle(self, req: httpx.Request):
         p = req.url.path
         base = "/repos/drFabioadv/horizonte"
-        assert req.headers["Authorization"] == "Bearer gh-teste"
+        assert req.headers["Authorization"] in ("Bearer gh-teste", "Bearer github_pat_PAINEL123456")
+        if p == base:
+            return httpx.Response(200, json={"permissions": {"push": True}})
+        if p.endswith("/dispatches"):
+            return httpx.Response(204)
         if p == f"{base}/git/ref/heads/nuvem":
             return httpx.Response(200 if "nuvem" in self.branches else 404, json={"object": {"sha": "x"}})
         if p == f"{base}/git/ref/heads/main":
@@ -127,3 +131,19 @@ def test_evening_cycle_produces_for_tomorrow(hz, world):
     assert rows and all(s["day"] == tomorrow for s in hz.db.query("SELECT day FROM stories"))
     local = [datetime.fromisoformat(r["scheduled_for"]).astimezone(hz.tz).strftime("%H:%M") for r in rows]
     assert sorted(local) == ["08:30", "12:30", "18:30"]
+
+
+def test_token_pasted_in_panel(hz, world, monkeypatch):
+    from horizonte import nuvem
+
+    gh, _ = _setup(hz, world, monkeypatch)
+    monkeypatch.delenv("HORIZONTE_GITHUB_TOKEN")
+    assert not nuvem.configured(hz)
+    assert not nuvem.save_token(hz, "abc")["ok"]
+    connect_linkedin(hz)
+    hz.set_prefs({"linkedin_auto": True})
+    res = nuvem.save_token(hz, "github_pat_PAINEL123456")
+    assert res["ok"] and nuvem.configured(hz) and "fila.enc" in gh.files
+    raw = hz.db.scalar("SELECT data FROM tokens WHERE provider='github'")
+    assert "github_pat" not in raw  # guardado criptografado
+    assert nuvem.dispatch(hz)["ok"]
