@@ -15,7 +15,7 @@ from . import llm
 from .db import dumps, loads, now_iso, utcnow
 from .images import pick_image
 from .textutil import fold, numbers, quotes, tokens, x_length
-from .verify import VERIFICADA, _idf, _weighted, verify_cluster
+from .verify import VERIFICADA, _idf, _weighted, bloqueio_publicacao, verify_cluster
 
 CATEGORY_LABEL = {"direito": "Direito e Justiça", "politica": "Política e Instituições", "sociedade": "Sociedade e Cidadania"}
 MIN_SCORE = 35
@@ -244,18 +244,20 @@ def check_text(text: str, pack: str, flags: list[str], year: int) -> list[str]:
     allowed = {str(year), str(year - 1), str(year + 1)}
     extra = sorted(n for n in numbers(text) - pack_nums - allowed)
     if extra:
-        problems.append(f"Números que não aparecem nas fontes: {', '.join(extra[:6])}.")
+        problems.append(f"O texto usa o(s) número(s) {', '.join(extra[:6])}, que não aparece(m) em nenhuma das notícias. "
+                        "Pode ser invenção da IA: apague ou troque por um dado que esteja nas fontes.")
     fpack = fold(pack)
     for q in quotes(text):
         if fold(q)[:40] not in fpack:
-            problems.append(f"Citação que não está nas fontes: “{q[:60]}”.")
+            problems.append(f"A frase entre aspas “{q[:60]}” não está nas notícias. Tire as aspas ou use a fala exata da fonte.")
     if "proposicao" in flags and _PROPOSAL_AS_LAW.search(text) and "sancion" not in fpack:
-        problems.append("O texto trata proposição como lei aprovada ou em vigor.")
+        problems.append("O texto fala de um projeto (PL, PEC ou MP) como se já fosse lei em vigor. Diga que é proposta ou que ainda tramita.")
     guilt = _GUILT.search(text)
     if guilt and "condenad" not in fpack:
-        problems.append(f"O texto afirma culpa ('{guilt.group(0)}') sem condenação nas fontes.")
+        problems.append(f"O texto chama alguém de culpado (“{guilt.group(0)}”) sem condenação nas fontes. "
+                        "Troque por “investigado”, “acusado” ou “suspeito”.")
     if _CAMPAIGN.search(text):
-        problems.append("O texto tem linguagem de campanha partidária.")
+        problems.append("O texto tem linguagem de campanha (pedido de voto ou bordão de partido). Tire esse trecho.")
     return problems
 
 
@@ -313,7 +315,7 @@ def _ask_checked(hz, prompt: str, pack: str, flags: list[str], extract) -> tuple
         fallback, problems = data, style  # só estilo: tenta melhorar uma vez
     if fallback is not None:
         return fallback, []
-    return None, problems
+    return data, problems  # texto com problemas: vai para você revisar (não some)
 
 
 def next_linkedin_slot(hz, day: str) -> str:
@@ -383,8 +385,9 @@ def produce_story(hz, story_id: int) -> dict:
     story = dict(hz.db.one("SELECT * FROM stories WHERE id=?", (story_id,)))
     cluster = dict(hz.db.one("SELECT * FROM clusters WHERE id=?", (story["cluster_id"],)))
     check = verify_cluster(hz, cluster["id"])
-    if check.get("status") != VERIFICADA:
-        _set_story(hz, story_id, "suspensa", f"A verificação mudou para {check.get('status')}: " + " ".join(check.get("notes", [])[-2:]))
+    bloqueio = bloqueio_publicacao(check)
+    if bloqueio:
+        _set_story(hz, story_id, "suspensa", f"A verificação mudou para {check.get('status')}: {bloqueio}")
         return {"ok": False, "motivo": "verificação mudou"}
     items = story_items(hz, story)
     pack = build_pack(hz, items)
@@ -398,9 +401,7 @@ def produce_story(hz, story_id: int) -> dict:
                                    alerts=", ".join(flags) or "nenhum"),
             pack, flags, _flatten,
         )
-        if analysis is None:
-            _set_story(hz, story_id, "suspensa", "A análise não passou nas travas factuais: " + " ".join(problems))
-            return {"ok": False, "motivo": "travas", "problemas": problems}
+        travas = [f"Na análise: {p}" for p in problems]
         adapted, problems = _ask_checked(
             hz,
             ADAPT_PROMPT.format(pack=pack, analysis=dumps(analysis)),
@@ -409,9 +410,7 @@ def produce_story(hz, story_id: int) -> dict:
                                  str(d.get("x", {}).get("texto", "")),
                                  *[str(t) for t in d.get("x", {}).get("thread", []) or []]]),
         )
-        if adapted is None:
-            _set_story(hz, story_id, "suspensa", "Os textos das redes não passaram nas travas factuais: " + " ".join(problems))
-            return {"ok": False, "motivo": "travas", "problemas": problems}
+        travas += [f"Nos textos: {p}" for p in problems]
     except llm.LLMUnavailable as e:
         hz.db.execute("UPDATE stories SET attempts=MAX(0, attempts-1) WHERE id=?", (story_id,))
         _set_story(hz, story_id, "aguardando_ia", f"IA local indisponível: {e}")
@@ -434,14 +433,15 @@ def produce_story(hz, story_id: int) -> dict:
     now = now_iso()
     news_date = cluster["newest_published"]
     created = []
+    aviso = ("O HORIZONTE segurou este texto para você revisar: " + " ".join(travas)) if travas else None
     with hz.db.tx() as conn:
-        li_status = "agendado"
+        li_status = "suspenso" if travas else "agendado"
         cur = conn.execute(
             "INSERT OR IGNORE INTO posts(story_id, network, format, title, body, hashtags, sources, image, category, news_date, "
-            "status, scheduled_for, content_hash, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+            "status, scheduled_for, error, content_hash, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
             (story_id, "linkedin", "post", title, li_body, dumps(li_tags), dumps(sources),
              dumps(image if image and image.get("autorizada") else None), story["category"], news_date, li_status,
-             next_linkedin_slot(hz, story["day"]), content_hash("linkedin", li_body), now, now),
+             next_linkedin_slot(hz, story["day"]), aviso, content_hash("linkedin", li_body), now, now),
         )
         if cur.rowcount:
             created.append(cur.lastrowid)
@@ -450,18 +450,78 @@ def produce_story(hz, story_id: int) -> dict:
             "news_date, status, error, content_hash, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
             (story_id, "x", "thread" if x_thread else "post", str(x.get("chamada") or title)[:120], x_single,
              dumps(x_thread), dumps(_clean_tags(x.get("hashtags"), 3)), dumps(sources), dumps(image), story["category"],
-             news_date, "pronto", str(x.get("orientacao") or "") or None, content_hash("x", x_single), now, now),
+             news_date, "pronto", aviso or str(x.get("orientacao") or "") or None, content_hash("x", x_single), now, now),
         )
         if cur.rowcount:
             created.append(cur.lastrowid)
     poster_frase = str(li.get("poster_frase") or "").strip()[:260]
     if poster_frase:
         analysis["poster_frase"] = poster_frase
-    _set_story(hz, story_id, "pronta", "Análise e textos aprovados nas travas factuais.", analysis)
+    if travas:
+        _set_story(hz, story_id, "suspensa", "O texto foi escrito, mas o HORIZONTE segurou para você revisar: " + " ".join(travas), analysis)
+        hz.log("warning", "editorial", f"Pauta {story_id} segurada para revisão: {' '.join(travas)}")
+    else:
+        _set_story(hz, story_id, "pronta", "Análise e textos aprovados nas travas factuais.", analysis)
     if prefs.get("poster_auto", True):
         attach_poster(hz, story_id, analysis)
-    hz.log("info", "editorial", f"Pauta {story_id} pronta: {title}")
-    return {"ok": True, "posts": created, "titulo": title}
+    if not travas:
+        hz.log("info", "editorial", f"Pauta {story_id} pronta: {title}")
+    return {"ok": not travas, "posts": created, "titulo": title, **({"motivo": "travas", "problemas": travas} if travas else {})}
+
+
+def text_of_post(body: str) -> str:
+    """O texto escrito, sem a lista de fontes e as hashtags que o HORIZONTE acrescenta."""
+    return body.split("\n\nFontes consultadas:", 1)[0]
+
+
+def revalidate_post(hz, post_id: int) -> dict:
+    """Confere de novo o texto (depois que você editou). Se passar, volta para a fila de publicação."""
+    post = hz.db.one("SELECT * FROM posts WHERE id=?", (post_id,))
+    if not post:
+        return {"ok": False, "problemas": ["Post não encontrado."]}
+    story = hz.db.one("SELECT * FROM stories WHERE id=?", (post["story_id"],)) if post["story_id"] else None
+    flags, pack = [], ""
+    if story:
+        cluster = hz.db.one("SELECT * FROM clusters WHERE id=?", (story["cluster_id"],))
+        flags = loads(cluster["flags"], []) if cluster else []
+        pack = build_pack(hz, story_items(hz, dict(story)))
+        check = verify_cluster(hz, story["cluster_id"])
+        bloqueio = bloqueio_publicacao(check)
+        if bloqueio:
+            return {"ok": False, "problemas": [f"Verificação da notícia ({check.get('status')}): {bloqueio}"]}
+    problems = check_text(text_of_post(post["body"]), pack, flags, hz.today().year) if pack else []
+    if problems:
+        hz.db.execute("UPDATE posts SET error=?, updated_at=? WHERE id=?",
+                      ("Ainda falta corrigir: " + " ".join(problems), now_iso(), post_id))
+        return {"ok": False, "problemas": problems}
+    _release(hz, dict(post), story, "Texto revisado e aprovado nas travas.")
+    return {"ok": True}
+
+
+def _release(hz, post: dict, story, motivo: str, liberado: bool = False) -> None:
+    if post["network"] == "linkedin" and post["status"] in ("suspenso", "falhou", "agendado"):
+        slot = post["scheduled_for"]
+        if not slot or slot < now_iso():
+            slot = next_linkedin_slot(hz, hz.today().isoformat())
+        hz.db.execute("UPDATE posts SET status='agendado', error=NULL, scheduled_for=?, liberado=?, updated_at=? WHERE id=?",
+                      (slot, int(liberado or post.get("liberado") or 0), now_iso(), post["id"]))
+    elif post["network"] == "x":
+        hz.db.execute("UPDATE posts SET error=NULL, updated_at=? WHERE id=?", (now_iso(), post["id"]))
+    if story and story["status"] == "suspensa":
+        hz.db.execute("UPDATE posts SET error=NULL WHERE story_id=? AND network='x' AND status='pronto'", (story["id"],))
+        _set_story(hz, story["id"], "pronta", motivo)
+
+
+def override_post(hz, post_id: int) -> dict:
+    """'Publicar mesmo assim': você assume a decisão; o HORIZONTE não segura mais este post."""
+    post = hz.db.one("SELECT * FROM posts WHERE id=?", (post_id,))
+    if not post:
+        return {"ok": False, "mensagem": "Post não encontrado."}
+    story = hz.db.one("SELECT * FROM stories WHERE id=?", (post["story_id"],)) if post["story_id"] else None
+    _release(hz, dict(post), story, "Liberado por você para publicação, apesar do aviso.", liberado=True)
+    if story:
+        _event(hz, story["id"], "liberada", f"Post {post_id} liberado manualmente (aviso anterior: {post['error'] or story['reason'] or '-'})")
+    return {"ok": True}
 
 
 def attach_poster(hz, story_id: int, analysis: dict | None = None, frase: str | None = None) -> dict | None:

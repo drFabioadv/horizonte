@@ -66,14 +66,36 @@ def test_guard_retries_then_passes(hz, world):
     assert not any("73%" in r["body"] for r in hz.db.query("SELECT body FROM posts"))
 
 
-def test_guard_suspends_when_invention_persists(hz, world):
+def test_guard_holds_text_for_review_when_invention_persists(hz, world):
+    """Texto com dado inventado não some: fica segurado, com o motivo, para você corrigir."""
     world.llm_mode = "always_bad"
     _ready(hz)
     out = editorial.produce_pending(hz)
     assert out["produzidas"] == 0
     rows = hz.db.query("SELECT status, reason FROM stories")
     assert all(r["status"] == "suspensa" and "73" in r["reason"] for r in rows)
-    assert hz.db.scalar("SELECT COUNT(*) FROM posts") == 0
+    posts = hz.db.query("SELECT * FROM posts WHERE network='linkedin'")
+    assert posts and all(p["status"] == "suspenso" and "73" in p["error"] for p in posts)
+    # você corrige o texto e manda conferir de novo
+    p = posts[0]
+    fixed = p["body"].replace(" Segundo levantamento, 73% dos brasileiros apoiam a medida.", "")
+    hz.db.execute("UPDATE posts SET body=? WHERE id=?", (fixed, p["id"]))
+    assert editorial.revalidate_post(hz, p["id"])["ok"]
+    row = hz.db.one("SELECT status, error FROM posts WHERE id=?", (p["id"],))
+    assert row["status"] == "agendado" and row["error"] is None
+    assert hz.db.scalar("SELECT status FROM stories WHERE id=?", (p["story_id"],)) == "pronta"
+
+
+def test_revalidate_keeps_holding_and_override_releases(hz, world):
+    world.llm_mode = "always_bad"
+    _ready(hz)
+    editorial.produce_pending(hz)
+    p = hz.db.one("SELECT * FROM posts WHERE network='linkedin'")
+    res = editorial.revalidate_post(hz, p["id"])
+    assert not res["ok"] and "73" in res["problemas"][0]
+    assert editorial.override_post(hz, p["id"])["ok"]
+    row = hz.db.one("SELECT status, liberado FROM posts WHERE id=?", (p["id"],))
+    assert row["status"] == "agendado" and row["liberado"] == 1
 
 
 def test_without_local_ai_nothing_is_invented(hz, world):
@@ -92,8 +114,8 @@ def test_without_local_ai_nothing_is_invented(hz, world):
 def test_check_text_rules():
     pack = "O Senado aprovou o projeto de lei por 62 votos. Segundo a PF, o suspeito é investigado."
     assert editorial.check_text("Aprovado por 62 votos.", pack, [], 2026) == []
-    assert any("Números" in p for p in editorial.check_text("Aprovado por 63 votos.", pack, [], 2026))
-    assert any("proposição" in p for p in editorial.check_text("A nova lei entra em vigor.", pack, ["proposicao"], 2026))
-    assert any("culpa" in p for p in editorial.check_text("O criminoso foi preso.", pack, ["acusacao"], 2026))
-    assert any("Citação" in p for p in editorial.check_text('Ele disse: "vamos mudar tudo neste país agora".', pack, [], 2026))
+    assert any("63" in p and "fontes" in p for p in editorial.check_text("Aprovado por 63 votos.", pack, [], 2026))
+    assert any("projeto" in p for p in editorial.check_text("A nova lei entra em vigor.", pack, ["proposicao"], 2026))
+    assert any("culpado" in p for p in editorial.check_text("O criminoso foi preso.", pack, ["acusacao"], 2026))
+    assert any("aspas" in p for p in editorial.check_text('Ele disse: "vamos mudar tudo neste país agora".', pack, [], 2026))
     assert any("campanha" in p for p in editorial.check_text("Vote em quem defende isso.", pack, [], 2026))

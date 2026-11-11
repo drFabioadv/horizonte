@@ -223,7 +223,32 @@ def create_app(hz: Horizonte | None = None, start_scheduler: bool = True) -> Fas
             "SELECT * FROM posts WHERE story_id=? ORDER BY network", (sid,))]
         st["historico"] = [dict(r) for r in hz.db.query(
             "SELECT ts, event, detail FROM story_events WHERE story_id=? ORDER BY id", (sid,))]
+        st["explicacao"] = _explain(st)
         return st
+
+    def _explain(st: dict) -> dict:
+        """Traduz os avisos em vermelho: por que está assim e o que dá para fazer."""
+        from .verify import EXPLICACAO, bloqueio_publicacao, verify_cluster
+
+        check = verify_cluster(hz, st["cluster_id"]) or {}
+        st["grupo"]["verification"] = check.get("status", st["grupo"].get("verification"))
+        st["grupo"]["verification_notes"] = check.get("notes", st["grupo"].get("verification_notes"))
+        motivo = check.get("motivo")
+        bloqueia = bool(bloqueio_publicacao(check))
+        itens = []
+        if check.get("status") and check["status"] != "VERIFICADA":
+            itens.append({"tipo": "verificacao", "titulo": f"Selo {check['status']}",
+                          "texto": EXPLICACAO.get(motivo or "", " ".join(check.get("notes", [])[-1:])),
+                          "bloqueia": bloqueia})
+        if st["status"] == "suspensa" and st.get("reason"):
+            itens.append({"tipo": "pauta", "titulo": "Por que a pauta foi suspensa", "texto": st["reason"],
+                          "bloqueia": True})
+        for p in st["posts"]:
+            if p["network"] == "linkedin" and p["status"] == "suspenso" and p.get("error") \
+                    and p["error"].split(": ", 1)[-1] not in (st.get("reason") or ""):
+                itens.append({"tipo": "post", "post": p["id"], "titulo": "Por que o post do LinkedIn está segurado",
+                              "texto": p["error"], "bloqueia": True})
+        return {"itens": itens, "motivo": motivo, "bloqueia_publicacao": bloqueia}
 
     @app.get("/api/pautas")
     def pautas(dia: str = "", status: str = "", limite: int = 80):
@@ -337,6 +362,18 @@ def create_app(hz: Horizonte | None = None, start_scheduler: bool = True) -> Fas
         img = images.user_image(path, re.sub(r"[^\w.\- ]", "", arquivo.filename or "imagem"))
         hz.db.execute("UPDATE posts SET image=?, updated_at=? WHERE id=?", (dumps(img), now_iso(), pid))
         return {"ok": True, "imagem": img}
+
+    @app.post("/api/posts/{pid}/revalidar")
+    def post_revalidar(pid: int):
+        nuvem.soon()
+        return editorial.revalidate_post(hz, pid)
+
+    @app.post("/api/posts/{pid}/liberar")
+    def post_liberar(pid: int, payload: dict = Body(default={})):
+        if not payload.get("confirmo"):
+            raise HTTPException(400, "Confirme que quer publicar mesmo com o aviso.")
+        nuvem.soon()
+        return editorial.override_post(hz, pid)
 
     @app.post("/api/pautas/{sid}/poster")
     def pauta_poster(sid: int, payload: dict = Body(default={})):

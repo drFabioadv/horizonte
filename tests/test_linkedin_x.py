@@ -99,16 +99,33 @@ def test_image_upload_when_authorized(hz, world):
     assert any(c.url.host == "upload.linkedin.test" for c in world.calls)
 
 
-def test_verification_change_suspends_before_publishing(hz, world):
+def test_old_news_does_not_block_a_ready_post(hz, world):
+    """Passar de 48 h só impede escolher a pauta; o texto pronto ainda pode sair."""
     ids = _produced(hz)
     connect_linkedin(hz)
     story = hz.db.scalar("SELECT story_id FROM posts WHERE id=?", (ids[0],))
     cid = hz.db.scalar("SELECT cluster_id FROM stories WHERE id=?", (story,))
     hz.db.execute("UPDATE news SET published_at='2000-01-01T00:00:00+00:00' WHERE cluster_id=?", (cid,))
+    assert linkedin.publish_post(hz, ids[0], force=True)["ok"]
+
+
+def test_contested_fact_holds_post_with_reason_and_override(hz, world):
+    from horizonte import editorial
+
+    ids = _produced(hz)
+    connect_linkedin(hz)
+    story = hz.db.scalar("SELECT story_id FROM posts WHERE id=?", (ids[0],))
+    cid = hz.db.scalar("SELECT cluster_id FROM stories WHERE id=?", (story,))
+    hz.db.execute("UPDATE news SET flags='[\"contestacao\"]' WHERE cluster_id=?", (cid,))
+    hz.db.execute("UPDATE sources SET org=org||id")  # garante 2+ veículos
     res = linkedin.publish_post(hz, ids[0], force=True)
-    assert not res["ok"] and "Suspenso" in res["mensagem"]
+    if hz.db.scalar("SELECT COUNT(DISTINCT s.org) FROM news n JOIN sources s ON s.id=n.source_id WHERE n.cluster_id=?", (cid,)) < 2:
+        raise AssertionError("cenário sem 2 veículos")
+    assert not res["ok"] and "contest" in res["mensagem"]
     assert hz.db.scalar("SELECT status FROM posts WHERE id=?", (ids[0],)) == "suspenso"
-    assert not world.posts_created
+    assert editorial.override_post(hz, ids[0])["ok"]
+    assert linkedin.publish_post(hz, ids[0], force=True)["ok"]
+    assert len(world.posts_created) == 1
 
 
 def test_interrupted_publication_is_not_repeated(hz, world):

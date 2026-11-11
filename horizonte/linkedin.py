@@ -16,7 +16,7 @@ from urllib.parse import urlencode
 import httpx
 
 from .db import loads, now_iso, utcnow
-from .verify import VERIFICADA, verify_cluster
+from .verify import VERIFICADA, bloqueio_publicacao, verify_cluster
 
 AUTH_URL = "https://www.linkedin.com/oauth/v2/authorization"
 TOKEN_URL = "https://www.linkedin.com/oauth/v2/accessToken"
@@ -298,11 +298,12 @@ def publish_post(hz, post_id: int, force: bool = False) -> dict:
         return {"ok": False, "mensagem": "LinkedIn não conectado ou autorização vencida."}
     if "w_member_social" not in tok.get("scopes", []):
         return {"ok": False, "mensagem": "A autorização não inclui a permissão w_member_social."}
-    if post["story_id"]:
+    if post["story_id"] and not post.get("liberado"):
         story = hz.db.one("SELECT cluster_id FROM stories WHERE id=?", (post["story_id"],))
         check = verify_cluster(hz, story["cluster_id"]) if story else {"status": VERIFICADA}
-        if check.get("status") != VERIFICADA:
-            reason = f"Suspenso: a verificação da pauta mudou para {check.get('status')}."
+        motivo = bloqueio_publicacao(check)
+        if motivo:
+            reason = f"Segurado na hora de publicar ({check.get('status')}): {motivo}"
             hz.db.execute("UPDATE posts SET status='suspenso', error=?, updated_at=? WHERE id=?", (reason, now_iso(), post_id))
             return {"ok": False, "mensagem": reason}
     already = hz.db.scalar(

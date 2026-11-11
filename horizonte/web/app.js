@@ -7,10 +7,10 @@ const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "
 const CAT = { direito: "Direito e Justiça", politica: "Política e Instituições", sociedade: "Sociedade e Cidadania" };
 const STAMP = { "VERIFICADA": "VERIFICADA", "EM CONFERÊNCIA": "EM", "CONTROVERSA": "CONTROVERSA", "NÃO PUBLICAR": "NAO" };
 const STORY = { selecionada: ["Selecionada", "info"], em_producao: ["Em produção", "info"], pronta: ["Pronta", "ok"], publicada: ["Publicada", "ok"],
-  suspensa: ["Suspensa", "bad"], aguardando_ia: ["Aguardando IA local", "warn"], descartada: ["Descartada", ""] };
+  suspensa: ["Segurada para revisão", "bad"], aguardando_ia: ["Aguardando IA local", "warn"], descartada: ["Descartada", ""] };
 const LIST = { agendado: ["Agendado", "info"], publicado: ["Publicado", "ok"], publicando: ["Publicando", "info"], falhou: ["Falhou", "bad"],
-  suspenso: ["Suspenso", "bad"], verificar: ["Conferir no LinkedIn", "warn"], cancelado: ["Cancelado", ""] };
-const XST = { pronto: ["PRONTO PARA PUBLICAR", "warn"], publicado_manual: ["PUBLICADO MANUALMENTE", "ok"], descartado: ["DESCARTADO", ""] };
+  suspenso: ["Segurado para revisão", "bad"], verificar: ["Conferir no LinkedIn", "warn"], cancelado: ["Cancelado", ""] };
+const XST = { pronto: ["PRONTO (VOCÊ POSTA NO X)", "warn"], publicado_manual: ["PUBLICADO MANUALMENTE", "ok"], descartado: ["DESCARTADO", ""] };
 
 const fmt = (iso, opt = {}) => {
   if (!iso) return "—";
@@ -228,7 +228,16 @@ async function renderStory() {
   box.innerHTML = `
     <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:10px">${stamp(g.verification)}${cat(s.category)}${state(STORY, s.status)}<span class="faint mono" style="font-size:12px">pauta #${s.id}</span></div>
     <h2 class="headline">${esc(a.titulo || g.title)}</h2>
-    <p class="muted" style="font-size:13px">${esc(s.reason || "")}</p>
+    ${(() => {
+      const ex = (s.explicacao && s.explicacao.itens) || [];
+      if (!ex.length) return `<p class="muted" style="font-size:13px">${esc(s.reason || "")}</p>`;
+      return `<div class="why"><h4>Por que está em vermelho</h4>${ex.map((e) => `
+        <div class="why-item ${e.bloqueia ? "bad" : "info"}"><strong>${esc(e.titulo)}</strong><p>${esc(e.texto)}</p>
+        ${e.bloqueia ? "" : '<p class="faint" style="margin:0">Isso não impede publicar o texto que já está pronto.</p>'}</div>`).join("")}
+        <p class="faint" style="margin:8px 0 0;font-size:12.5px">O que fazer: corrija o texto do LinkedIn aqui embaixo e clique em <b>Conferir de novo</b>.
+        Se você leu e concorda com o texto como está, use <b>Publicar mesmo assim</b>: a decisão passa a ser sua.
+        Se a pauta não tem texto, use <b>Produzir de novo</b>.</p></div>`;
+    })()}
     ${a.tese ? `<blockquote class="tese">${esc(a.tese)}</blockquote>` : ""}
     <div class="actions" style="margin-top:10px">
       ${["suspensa", "aguardando_ia"].includes(s.status) ? '<button class="btn" id="bProd">Produzir de novo</button>' : ""}
@@ -253,7 +262,9 @@ async function renderStory() {
         ${li && img ? `<figure class="poster"><img src="${esc(img.url)}" alt="Imagem do post"><figcaption class="faint">${esc(img.credito || "")}</figcaption></figure>` : ""}
         ${editavel ? `<textarea id="etx${p.id}">${esc(p.body)}</textarea>` : `<div class="post-text">${esc(p.thread && p.thread.length ? p.thread.join("\n\n— — —\n\n") : p.body)}</div>`}
         ${li ? `<div class="actions" style="margin-top:8px">
-          ${editavel ? `<button class="btn primary" data-epub="${p.id}">Publicar agora no LinkedIn</button><button class="btn" data-esave="${p.id}">Salvar edição</button><button class="btn" data-poster="${s.id}">${img && img.poster ? "Refazer pôster" : "Criar pôster"}</button>` : ""}
+          ${editavel && p.status !== "suspenso" ? `<button class="btn primary" data-epub="${p.id}">Publicar agora no LinkedIn</button>` : ""}
+          ${p.status === "suspenso" ? `<button class="btn primary" data-reval="${p.id}">Conferir de novo</button><button class="btn danger" data-force="${p.id}">Publicar mesmo assim</button>` : ""}
+          ${editavel ? `<button class="btn" data-esave="${p.id}">Salvar edição</button><button class="btn" data-poster="${s.id}">${img && img.poster ? "Refazer pôster" : "Criar pôster"}</button>` : ""}
           ${p.external_url ? `<a class="btn" href="${esc(p.external_url)}" target="_blank" rel="noopener">Ver no LinkedIn</a>` : ""}
           ${p.error ? `<div class="notice bad" style="flex-basis:100%">${esc(p.error)}</div>` : ""}
         </div>` : `<div class="actions" style="margin-top:8px"><a class="btn" href="#x">Abrir na Central do X</a></div>`}
@@ -273,6 +284,28 @@ async function renderStory() {
       const r = await api(`/api/linkedin/posts/${b.dataset.epub}/publicar`, { method: "POST" });
       toast(r.ok ? "Publicado no LinkedIn." : r.mensagem || "Não foi possível publicar.", 7000);
     } catch (err) { toast(err.message, 7000); }
+    renderStory();
+  }));
+  $$("[data-reval]", box).forEach((b) => (b.onclick = async () => {
+    const id = b.dataset.reval;
+    b.disabled = true;
+    await api(`/api/posts/${id}/texto`, { method: "PUT", body: { texto: $("#etx" + id).value } });
+    const r = await api(`/api/posts/${id}/revalidar`, { method: "POST" });
+    toast(r.ok ? "Passou na conferência. O post voltou para a fila de publicação." : "Ainda falta corrigir: " + (r.problemas || []).join(" "), 9000);
+    renderStory();
+  }));
+  $$("[data-force]", box).forEach((b) => (b.onclick = async () => {
+    const id = b.dataset.force;
+    const agora = confirm("Publicar mesmo com o aviso?\n\nVocê leu o texto e as fontes e assume a decisão. " +
+      "OK = publicar AGORA no LinkedIn.\nCancelar = não fazer nada.");
+    if (!agora) return;
+    b.disabled = true;
+    try {
+      await api(`/api/posts/${id}/texto`, { method: "PUT", body: { texto: $("#etx" + id).value } });
+      await api(`/api/posts/${id}/liberar`, { method: "POST", body: { confirmo: true } });
+      const r = await api(`/api/linkedin/posts/${id}/publicar`, { method: "POST" });
+      toast(r.ok ? "Publicado no LinkedIn." : r.mensagem || "Liberado; não consegui publicar agora.", 8000);
+    } catch (err) { toast(err.message, 8000); }
     renderStory();
   }));
   $$("[data-poster]", box).forEach((b) => (b.onclick = async () => {

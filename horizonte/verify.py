@@ -163,6 +163,7 @@ def verify_cluster(hz, cluster_id: int) -> dict:
     region = "PA" if any(i["region"] == "PA" for i in items) else "BR"
 
     notes: list[str] = []
+    motivo = None
     n_orgs = len(orgs)
     notes.append(f"{len(items)} registro(s) de {n_orgs} veículo(s)/órgão(s) independente(s).")
     if has_primary:
@@ -173,23 +174,23 @@ def verify_cluster(hz, cluster_id: int) -> dict:
     hours = int(max_age.total_seconds() // 3600)
 
     if newest and now - newest > max_age:
-        status = NAO_PUBLICAR
+        status, motivo = NAO_PUBLICAR, "antiga"
         notes.append(f"Notícia antiga: publicada em {newest.date().isoformat()}, fora da janela de {hours} horas.")
     elif all_opinion:
-        status = NAO_PUBLICAR
+        status, motivo = NAO_PUBLICAR, "opiniao"
         notes.append("Só há conteúdo de opinião, áudio ou vídeo; não serve de base factual.")
     elif low_value:
-        status = NAO_PUBLICAR
+        status, motivo = NAO_PUBLICAR, "irrelevante"
         notes.append("Sem relevância pública suficiente para a linha editorial.")
     elif "contestacao" in flags and n_orgs >= 2:
-        status = CONTROVERSA
+        status, motivo = CONTROVERSA, "contestacao"
         notes.append("Há versões em disputa entre as fontes (negação, contestação ou desmentido).")
     elif "acusacao" in flags:
         if has_primary or n_orgs >= 3:
             status = VERIFICADA
             notes.append("Envolve acusação: o fato da investigação/denúncia está confirmado, não a culpa. Respeitar a presunção de inocência.")
         else:
-            status = EM_CONFERENCIA
+            status, motivo = EM_CONFERENCIA, "acusacao_sem_fonte"
             notes.append("Envolve acusação grave sem fonte primária nem três veículos independentes. Aguardando confirmação.")
     elif has_primary or n_orgs >= 2:
         status = VERIFICADA
@@ -197,13 +198,13 @@ def verify_cluster(hz, cluster_id: int) -> dict:
         status = VERIFICADA
         notes.append("Fonte: agência pública de notícias (EBC); confirmação independente recomendada para detalhes.")
     else:
-        status = EM_CONFERENCIA
+        status, motivo = EM_CONFERENCIA, "fonte_unica"
         notes.append("Uma única fonte jornalística; aguardando confirmação independente. Ausência de confirmação não significa que a notícia seja falsa.")
 
     if undated:
         notes.append("O feed não informa data de publicação; usada a data da primeira leitura.")
         if status == VERIFICADA and not has_primary and n_orgs < 2:
-            status = EM_CONFERENCIA
+            status, motivo = EM_CONFERENCIA, "sem_data"
     if "proposicao" in flags:
         notes.append("Trata de proposição (projeto, PEC ou MP): não apresentar como lei aprovada.")
     if "decisao_provisoria" in flags:
@@ -223,7 +224,34 @@ def verify_cluster(hz, cluster_id: int) -> dict:
         (items[0]["title"], category, region, newest_iso, len(items), n_orgs, int(has_primary), status,
          dumps(notes), dumps(sorted(flags)), score, now_iso(), cluster_id),
     )
-    return {"status": status, "notes": notes, "score": score, "category": category}
+    return {"status": status, "notes": notes, "score": score, "category": category, "motivo": motivo}
+
+
+# Motivos que só servem para ESCOLHER pautas, não para barrar um texto já escrito:
+# a notícia não fica falsa por ter passado de 48 horas.
+_SO_SELECAO = {"antiga", "irrelevante", "opiniao", "sem_data"}
+
+EXPLICACAO = {
+    "antiga": "A notícia passou do limite de idade (Configurações → Idade máxima). Isso só impede que ela seja ESCOLHIDA "
+              "como pauta nova; um texto já pronto pode ser publicado normalmente.",
+    "opiniao": "As fontes do grupo são só artigos de opinião, áudio ou vídeo, sem uma notícia factual por trás.",
+    "irrelevante": "O tema tem pouca relevância pública para a linha editorial (Direito, política, sociedade).",
+    "contestacao": "Apareceram versões em disputa: alguém negou, contestou ou desmentiu o fato. Vale ler as fontes "
+                   "antes de publicar e, se for o caso, ajustar o texto para dizer que o fato é contestado.",
+    "acusacao_sem_fonte": "Envolve acusação grave, e só há uma ou duas fontes jornalísticas, sem documento oficial. "
+                          "O HORIZONTE espera uma confirmação maior para não te expor.",
+    "fonte_unica": "Só um veículo noticiou até agora. Não quer dizer que seja falso; o HORIZONTE espera um segundo veículo "
+                   "ou o órgão oficial confirmar.",
+    "sem_data": "O site não informa a data da notícia, e há uma única fonte.",
+}
+
+
+def bloqueio_publicacao(check: dict) -> str | None:
+    """Diz se a verificação ATUAL deve segurar um post já pronto (e por quê)."""
+    status = check.get("status")
+    if not status or status == VERIFICADA or check.get("motivo") in _SO_SELECAO:
+        return None
+    return EXPLICACAO.get(check.get("motivo") or "", "A verificação da notícia mudou desde que o texto foi escrito.")
 
 
 def reverify_recent(hz, hours: int = 72) -> int:

@@ -164,3 +164,8 @@ th{font-family:var(--f-mono);font-weight:500;font-size:11px;letter-spacing:.08em
 .poster figcaption{font-size:12px;margin-top:4px}
 .post-box textarea{width:100%;min-height:220px}
 .tese{margin:10px 0 4px;padding:10px 14px;border-left:3px solid var(--gold, #e2b25c);font-family:Newsreader,Georgia,serif;font-size:19px;font-style:italic}
+.why{margin:10px 0 14px;padding:12px 14px;border:1px solid rgba(230,110,110,.35);border-radius:10px;background:rgba(230,110,110,.06)}
+.why h4{margin:0 0 8px}
+.why-item{padding:8px 10px;margin:6px 0;border-left:3px solid #e66e6e;background:rgba(0,0,0,.15);border-radius:6px}
+.why-item.info{border-left-color:#7aa7d8}
+.why-item p{margin:4px 0 0;font-size:13.5px}

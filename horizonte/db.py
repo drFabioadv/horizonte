@@ -122,6 +122,7 @@ CREATE TABLE IF NOT EXISTS posts (
     external_id TEXT,
     external_url TEXT,
     error TEXT,
+    liberado INTEGER NOT NULL DEFAULT 0,
     content_hash TEXT NOT NULL,
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL,
@@ -243,6 +244,9 @@ class Database:
     def migrate(self) -> None:
         conn = self._conn()
         conn.executescript(SCHEMA)
+        cols = {r[1] for r in conn.execute("PRAGMA table_info(posts)")}
+        if "liberado" not in cols:  # bancos criados antes da opção "publicar mesmo assim"
+            conn.execute("ALTER TABLE posts ADD COLUMN liberado INTEGER NOT NULL DEFAULT 0")
         conn.execute(
             "INSERT OR IGNORE INTO meta(key, value) VALUES ('schema_version', ?)",
             (str(SCHEMA_VERSION),),
