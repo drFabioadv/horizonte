@@ -24,12 +24,20 @@
    "urn": "urn:li:ugcPost:7526597806363688960",
    "hash": "fb1ee985a36e30be6d6ee316cc7de19cea948adf39612b5f487074ddd202bdf5",
    "aviso": "O LinkedIn não aceitou o comentário com as fontes."
+  },
+  "20": {
+   "em": "2026-11-12T12:54:08+00:00",
+   "url": "https://www.linkedin.com/feed/update/urn:li:ugcPost:7526628403249299456/",
+   "urn": "urn:li:ugcPost:7526628403249299456",
+   "hash": "f0ce3bc042f4394091323c8b6727b77179a375ad0a0200a3b87566d5baa01f38",
+   "aviso": "O LinkedIn não aceitou o comentário com as fontes."
   }
  },
  "_status": {
-  "em": "2026-11-12T11:48:58+00:00",
+  "em": "2026-11-12T12:54:08+00:00",
   "situacao": "ok",
-  "mensagem": "Aguardando o intervalo mínimo entre posts.",
-  "pendentes": 2
+  "mensagem": "Publicado: O Parlamento precisa retomar seu papel para frear a hipertrofia do Judiciário",
+  "pendentes": 1,
+  "ultimo": "https://www.linkedin.com/feed/update/urn:li:ugcPost:7526628403249299456/"
  }
 }
