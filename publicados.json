@@ -45,12 +45,20 @@
    "urn": "urn:li:ugcPost:7527476465391779840",
    "hash": "b007ccd4ede16c0c1c2459b1fb4a95ca28a115e932d486427a11321ac026b071",
    "aviso": "O LinkedIn não aceitou o comentário com as fontes."
+  },
+  "32": {
+   "em": "2026-11-14T23:05:42+00:00",
+   "url": "https://www.linkedin.com/feed/update/urn:li:ugcPost:7527507086751080448/",
+   "urn": "urn:li:ugcPost:7527507086751080448",
+   "hash": "21310a68dfdd34ec30aa61df71591f9fc7910e44c826d4e2343641395f9d2244",
+   "aviso": "O LinkedIn não aceitou o comentário com as fontes."
   }
  },
  "_status": {
-  "em": "2026-11-14T22:27:08+00:00",
+  "em": "2026-11-14T23:05:42+00:00",
   "situacao": "ok",
-  "mensagem": "Aguardando o intervalo mínimo entre posts.",
-  "pendentes": 2
+  "mensagem": "Publicado: O Estado tem o dever de agir, mas a emergência não pode ser um salvo-conduto",
+  "pendentes": 1,
+  "ultimo": "https://www.linkedin.com/feed/update/urn:li:ugcPost:7527507086751080448/"
  }
 }
