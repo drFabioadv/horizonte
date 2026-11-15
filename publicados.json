@@ -52,12 +52,20 @@
    "urn": "urn:li:ugcPost:7527507086751080448",
    "hash": "21310a68dfdd34ec30aa61df71591f9fc7910e44c826d4e2343641395f9d2244",
    "aviso": "O LinkedIn não aceitou o comentário com as fontes."
+  },
+  "26": {
+   "em": "2026-11-15T00:51:58+00:00",
+   "url": "https://www.linkedin.com/feed/update/urn:li:ugcPost:7527533829717213184/",
+   "urn": "urn:li:ugcPost:7527533829717213184",
+   "hash": "a220b2b7eb798c1df75254a2ae2ae914f085f9b86684fafa0b5c109cd7d49bf3",
+   "aviso": "O LinkedIn não aceitou o comentário com as fontes."
   }
  },
  "_status": {
-  "em": "2026-11-15T00:18:54+00:00",
+  "em": "2026-11-15T00:51:58+00:00",
   "situacao": "ok",
-  "mensagem": "Aguardando o intervalo mínimo entre posts.",
-  "pendentes": 1
+  "mensagem": "Publicado: A representatividade no STF é uma questão de justiça histórica",
+  "pendentes": 0,
+  "ultimo": "https://www.linkedin.com/feed/update/urn:li:ugcPost:7527533829717213184/"
  }
 }
