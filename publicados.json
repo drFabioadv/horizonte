@@ -66,12 +66,20 @@
    "urn": "urn:li:ugcPost:7528182096935284736",
    "hash": "2cadaad100c1c684e0eff05e7fa34d5c70e23a5e55272709a667cab497fab885",
    "aviso": "O LinkedIn não aceitou o comentário com as fontes."
+  },
+  "38": {
+   "em": "2026-11-16T21:31:26+00:00",
+   "url": "https://www.linkedin.com/feed/update/urn:li:ugcPost:7528208137678450690/",
+   "urn": "urn:li:ugcPost:7528208137678450690",
+   "hash": "e5a602174010a00c5c510a6742ea36e2ff7a0935785050592225c46aaf468e05",
+   "aviso": "O LinkedIn não aceitou o comentário com as fontes."
   }
  },
  "_status": {
-  "em": "2026-11-16T20:41:59+00:00",
+  "em": "2026-11-16T21:31:26+00:00",
   "situacao": "ok",
-  "mensagem": "Aguardando o intervalo mínimo entre posts.",
-  "pendentes": 2
+  "mensagem": "Publicado: A violência contra mulheres negras é um sintoma de falha estrutural do Estado",
+  "pendentes": 1,
+  "ultimo": "https://www.linkedin.com/feed/update/urn:li:ugcPost:7528208137678450690/"
  }
 }
