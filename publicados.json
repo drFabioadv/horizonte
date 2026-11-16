@@ -73,12 +73,20 @@
    "urn": "urn:li:ugcPost:7528208137678450690",
    "hash": "e5a602174010a00c5c510a6742ea36e2ff7a0935785050592225c46aaf468e05",
    "aviso": "O LinkedIn não aceitou o comentário com as fontes."
+  },
+  "34": {
+   "em": "2026-11-16T23:15:45+00:00",
+   "url": "https://www.linkedin.com/feed/update/urn:li:ugcPost:7528234391207059456/",
+   "urn": "urn:li:ugcPost:7528234391207059456",
+   "hash": "3d6a70a73dc3857e96d7522c8111babb11cae40cd68e18b1dddd8295710fbb91",
+   "aviso": "O LinkedIn não aceitou o comentário com as fontes."
   }
  },
  "_status": {
-  "em": "2026-11-16T22:28:21+00:00",
+  "em": "2026-11-16T23:15:45+00:00",
   "situacao": "ok",
-  "mensagem": "Aguardando o intervalo mínimo entre posts.",
-  "pendentes": 1
+  "mensagem": "Publicado: O Estado não pode ser obrigado a financiar privilégios sob o manto da justiça",
+  "pendentes": 0,
+  "ultimo": "https://www.linkedin.com/feed/update/urn:li:ugcPost:7528234391207059456/"
  }
 }
