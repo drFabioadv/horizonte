@@ -87,12 +87,20 @@
    "urn": "urn:li:ugcPost:7528930154652319744",
    "hash": "5cc5c5ee4221bb63cbf07db370e8e77820a501810afd5d4b73da6b02e39ee400",
    "aviso": "O LinkedIn não aceitou o comentário com as fontes."
+  },
+  "42": {
+   "em": "2026-11-18T23:17:28+00:00",
+   "url": "https://www.linkedin.com/feed/update/urn:li:ugcPost:7528959600210116608/",
+   "urn": "urn:li:ugcPost:7528959600210116608",
+   "hash": "8c12d77abf593a1d47cbb81397a9074475e08ac380e351e571f443819559fd52",
+   "aviso": "O LinkedIn não aceitou o comentário com as fontes."
   }
  },
  "_status": {
-  "em": "2026-11-18T22:18:22+00:00",
+  "em": "2026-11-18T23:17:28+00:00",
   "situacao": "ok",
-  "mensagem": "Aguardando o intervalo mínimo entre posts.",
-  "pendentes": 3
+  "mensagem": "Publicado: O TCU acertou ao reduzir a insegurança jurídica na inovação pública",
+  "pendentes": 2,
+  "ultimo": "https://www.linkedin.com/feed/update/urn:li:ugcPost:7528959600210116608/"
  }
 }
