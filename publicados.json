@@ -94,12 +94,20 @@
    "urn": "urn:li:ugcPost:7528959600210116608",
    "hash": "8c12d77abf593a1d47cbb81397a9074475e08ac380e351e571f443819559fd52",
    "aviso": "O LinkedIn não aceitou o comentário com as fontes."
+  },
+  "44": {
+   "em": "2026-11-19T00:59:48+00:00",
+   "url": "https://www.linkedin.com/feed/update/urn:li:ugcPost:7528985348907909120/",
+   "urn": "urn:li:ugcPost:7528985348907909120",
+   "hash": "e1f3cd45207a6542575d308cc87364779b36620b5988c962d35081ae6ae32999",
+   "aviso": "O LinkedIn não aceitou o comentário com as fontes."
   }
  },
  "_status": {
-  "em": "2026-11-19T00:15:51+00:00",
+  "em": "2026-11-19T00:59:48+00:00",
   "situacao": "ok",
-  "mensagem": "Aguardando o intervalo mínimo entre posts.",
-  "pendentes": 2
+  "mensagem": "Publicado: O STF finalmente reconhece a pluralidade da justiça brasileira",
+  "pendentes": 1,
+  "ultimo": "https://www.linkedin.com/feed/update/urn:li:ugcPost:7528985348907909120/"
  }
 }
