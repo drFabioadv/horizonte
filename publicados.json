@@ -115,12 +115,20 @@
    "urn": "urn:li:ugcPost:7529203119856189441",
    "hash": "2cddb33975561d02d4c0093097f68f3452bbaf247a60ccc149a22c80bde82213",
    "aviso": "O LinkedIn não aceitou o comentário com as fontes."
+  },
+  "52": {
+   "em": "2026-11-19T17:28:49+00:00",
+   "url": "https://www.linkedin.com/feed/update/urn:li:ugcPost:7529234246679420929/",
+   "urn": "urn:li:ugcPost:7529234246679420929",
+   "hash": "ce16e6137dc5cc595c83311eb7a3f98d54beb32fe747f6892802da953c1294d9",
+   "aviso": "O LinkedIn não aceitou o comentário com as fontes."
   }
  },
  "_status": {
-  "em": "2026-11-19T16:29:26+00:00",
+  "em": "2026-11-19T17:28:49+00:00",
   "situacao": "ok",
-  "mensagem": "Aguardando o intervalo mínimo entre posts.",
-  "pendentes": 2
+  "mensagem": "Publicado: O Estado deve agir com cautela para proteger o direito à vida e à cultura",
+  "pendentes": 1,
+  "ultimo": "https://www.linkedin.com/feed/update/urn:li:ugcPost:7529234246679420929/"
  }
 }
