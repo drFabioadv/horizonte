@@ -122,12 +122,20 @@
    "urn": "urn:li:ugcPost:7529234246679420929",
    "hash": "ce16e6137dc5cc595c83311eb7a3f98d54beb32fe747f6892802da953c1294d9",
    "aviso": "O LinkedIn não aceitou o comentário com as fontes."
+  },
+  "48": {
+   "em": "2026-11-19T21:30:41+00:00",
+   "url": "https://www.linkedin.com/feed/update/urn:li:ugcPost:7529295114826072079/",
+   "urn": "urn:li:ugcPost:7529295114826072079",
+   "hash": "793735da4c3b53ac515c9b3fce0f876e5f897f49ac6e054b020bb4aa5fdcfd4b",
+   "aviso": "O LinkedIn não aceitou o comentário com as fontes."
   }
  },
  "_status": {
-  "em": "2026-11-19T20:33:59+00:00",
+  "em": "2026-11-19T21:30:41+00:00",
   "situacao": "ok",
-  "mensagem": "Nada para publicar agora.",
-  "pendentes": 1
+  "mensagem": "Publicado: A entrega dos relatórios ao STF é um teste de sobrevivência para a imparcialidad",
+  "pendentes": 0,
+  "ultimo": "https://www.linkedin.com/feed/update/urn:li:ugcPost:7529295114826072079/"
  }
 }
