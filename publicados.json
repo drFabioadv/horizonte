@@ -118,10 +118,9 @@
   }
  },
  "_status": {
-  "em": "2026-11-19T15:25:08+00:00",
+  "em": "2026-11-19T16:29:26+00:00",
   "situacao": "ok",
-  "mensagem": "Publicado: O socorro estatal aos exportadores é necessário, mas o Estado não pode ser o úni",
-  "pendentes": 2,
-  "ultimo": "https://www.linkedin.com/feed/update/urn:li:ugcPost:7529203119856189441/"
+  "mensagem": "Aguardando o intervalo mínimo entre posts.",
+  "pendentes": 2
  }
 }
