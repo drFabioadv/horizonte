@@ -101,13 +101,20 @@
    "urn": "urn:li:ugcPost:7528985348907909120",
    "hash": "e1f3cd45207a6542575d308cc87364779b36620b5988c962d35081ae6ae32999",
    "aviso": "O LinkedIn não aceitou o comentário com as fontes."
+  },
+  "46": {
+   "em": "2026-11-19T10:52:49+00:00",
+   "url": "https://www.linkedin.com/feed/update/urn:li:ugcPost:7529134588279939072/",
+   "urn": "urn:li:ugcPost:7529134588279939072",
+   "hash": "6e5541b333b30f607e4dafe6bcb9b3afbb5171f6d82f059797d75d21da70a77e",
+   "aviso": "O LinkedIn não aceitou o comentário com as fontes."
   }
  },
  "_status": {
-  "em": "2026-11-19T00:59:48+00:00",
+  "em": "2026-11-19T10:52:49+00:00",
   "situacao": "ok",
-  "mensagem": "Publicado: O STF finalmente reconhece a pluralidade da justiça brasileira",
-  "pendentes": 1,
-  "ultimo": "https://www.linkedin.com/feed/update/urn:li:ugcPost:7528985348907909120/"
+  "mensagem": "Publicado: O ajuste fiscal não pode atropelar a autonomia federativa",
+  "pendentes": 0,
+  "ultimo": "https://www.linkedin.com/feed/update/urn:li:ugcPost:7529134588279939072/"
  }
 }
