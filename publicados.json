@@ -129,12 +129,20 @@
    "urn": "urn:li:ugcPost:7529295114826072079",
    "hash": "793735da4c3b53ac515c9b3fce0f876e5f897f49ac6e054b020bb4aa5fdcfd4b",
    "aviso": "O LinkedIn não aceitou o comentário com as fontes."
+  },
+  "58": {
+   "em": "2026-11-24T00:31:58+00:00",
+   "url": "https://www.linkedin.com/feed/update/urn:li:ugcPost:7530790287011409922/",
+   "urn": "urn:li:ugcPost:7530790287011409922",
+   "hash": "3dacdf31d476b9665cfc553641d095134e3862ab416b116c8bbdc0c2d91929b1",
+   "aviso": "O LinkedIn não aceitou o comentário com as fontes."
   }
  },
  "_status": {
-  "em": "2026-11-23T23:32:56+00:00",
+  "em": "2026-11-24T00:31:58+00:00",
   "situacao": "ok",
-  "mensagem": "Nada para publicar agora.",
-  "pendentes": 0
+  "mensagem": "Publicado: A federação brasileira exige solidariedade e planejamento para reduzir desiguald",
+  "pendentes": 2,
+  "ultimo": "https://www.linkedin.com/feed/update/urn:li:ugcPost:7530790287011409922/"
  }
 }
