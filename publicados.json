@@ -164,12 +164,20 @@
    "urn": "urn:li:ugcPost:7531455437951406080",
    "hash": "db344be75f618fd9b0d93aa3075081d76e7c58a87367716c7e8411aac9475fb8",
    "aviso": "O LinkedIn não aceitou o comentário com as fontes."
+  },
+  "60": {
+   "em": "2026-11-25T22:36:30+00:00",
+   "url": "https://www.linkedin.com/feed/update/urn:li:ugcPost:7531486002083921920/",
+   "urn": "urn:li:ugcPost:7531486002083921920",
+   "hash": "5eb47395d3e07dfee02c47d4873a2832ac5fe78e1a7343b22bab6a3c58ee69b9",
+   "aviso": "O LinkedIn não aceitou o comentário com as fontes."
   }
  },
  "_status": {
-  "em": "2026-11-25T21:40:56+00:00",
+  "em": "2026-11-25T22:36:30+00:00",
   "situacao": "ok",
-  "mensagem": "Aguardando o intervalo mínimo entre posts.",
-  "pendentes": 1
+  "mensagem": "Publicado: A Advocacia do Senado no STF é defesa de prerrogativa ou blindagem política?",
+  "pendentes": 0,
+  "ultimo": "https://www.linkedin.com/feed/update/urn:li:ugcPost:7531486002083921920/"
  }
 }
