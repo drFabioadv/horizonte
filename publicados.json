@@ -150,12 +150,20 @@
    "urn": "urn:li:ugcPost:7531108812439592960",
    "hash": "4618830061dfbcbd340e94e58ff38f87f900846b3718336795edc518bf0d69e3",
    "aviso": "O LinkedIn não aceitou o comentário com as fontes."
+  },
+  "62": {
+   "em": "2026-11-25T18:29:52+00:00",
+   "url": "https://www.linkedin.com/feed/update/urn:li:ugcPost:7531423933682688000/",
+   "urn": "urn:li:ugcPost:7531423933682688000",
+   "hash": "09484bbe261f0c573022575978e6170e8bd0d3149d42b69811a2a0405549adc5",
+   "aviso": "O LinkedIn não aceitou o comentário com as fontes."
   }
  },
  "_status": {
-  "em": "2026-11-25T17:32:31+00:00",
+  "em": "2026-11-25T18:29:52+00:00",
   "situacao": "ok",
-  "mensagem": "Nada para publicar agora.",
-  "pendentes": 0
+  "mensagem": "Publicado: O ajuste fiscal é necessário, mas a pressa legislativa preocupa",
+  "pendentes": 2,
+  "ultimo": "https://www.linkedin.com/feed/update/urn:li:ugcPost:7531423933682688000/"
  }
 }
