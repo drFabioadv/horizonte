@@ -157,12 +157,20 @@
    "urn": "urn:li:ugcPost:7531423933682688000",
    "hash": "09484bbe261f0c573022575978e6170e8bd0d3149d42b69811a2a0405549adc5",
    "aviso": "O LinkedIn não aceitou o comentário com as fontes."
+  },
+  "64": {
+   "em": "2026-11-25T20:35:03+00:00",
+   "url": "https://www.linkedin.com/feed/update/urn:li:ugcPost:7531455437951406080/",
+   "urn": "urn:li:ugcPost:7531455437951406080",
+   "hash": "db344be75f618fd9b0d93aa3075081d76e7c58a87367716c7e8411aac9475fb8",
+   "aviso": "O LinkedIn não aceitou o comentário com as fontes."
   }
  },
  "_status": {
-  "em": "2026-11-25T19:30:15+00:00",
+  "em": "2026-11-25T20:35:03+00:00",
   "situacao": "ok",
-  "mensagem": "Aguardando o intervalo mínimo entre posts.",
-  "pendentes": 2
+  "mensagem": "Publicado: O controle externo precisa ser o guardião da eficiência social",
+  "pendentes": 1,
+  "ultimo": "https://www.linkedin.com/feed/update/urn:li:ugcPost:7531455437951406080/"
  }
 }
