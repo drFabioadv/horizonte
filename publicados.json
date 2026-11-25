@@ -160,10 +160,9 @@
   }
  },
  "_status": {
-  "em": "2026-11-25T18:29:52+00:00",
+  "em": "2026-11-25T19:30:15+00:00",
   "situacao": "ok",
-  "mensagem": "Publicado: O ajuste fiscal é necessário, mas a pressa legislativa preocupa",
-  "pendentes": 2,
-  "ultimo": "https://www.linkedin.com/feed/update/urn:li:ugcPost:7531423933682688000/"
+  "mensagem": "Aguardando o intervalo mínimo entre posts.",
+  "pendentes": 2
  }
 }
