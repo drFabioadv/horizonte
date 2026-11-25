@@ -167,10 +167,9 @@
   }
  },
  "_status": {
-  "em": "2026-11-25T20:35:03+00:00",
+  "em": "2026-11-25T21:40:56+00:00",
   "situacao": "ok",
-  "mensagem": "Publicado: O controle externo precisa ser o guardião da eficiência social",
-  "pendentes": 1,
-  "ultimo": "https://www.linkedin.com/feed/update/urn:li:ugcPost:7531455437951406080/"
+  "mensagem": "Aguardando o intervalo mínimo entre posts.",
+  "pendentes": 1
  }
 }
